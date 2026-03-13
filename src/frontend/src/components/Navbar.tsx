@@ -1,7 +1,14 @@
 import { Button } from "@/components/ui/button";
-import { Link } from "@tanstack/react-router";
-import { Building2, Menu, X } from "lucide-react";
-import { useState } from "react";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Link, useNavigate } from "@tanstack/react-router";
+import { Building2, Loader2, Menu, Shield, X } from "lucide-react";
+import { useEffect, useState } from "react";
+import { useInternetIdentity } from "../hooks/useInternetIdentity";
 
 const navLinks = [
   { to: "/", label: "Home" },
@@ -11,8 +18,103 @@ const navLinks = [
   { to: "/contact", label: "Contact" },
 ];
 
+function LoginDialog({
+  open,
+  onOpenChange,
+}: {
+  open: boolean;
+  onOpenChange: (v: boolean) => void;
+}) {
+  const { identity, login, isLoggingIn } = useInternetIdentity();
+  const navigate = useNavigate();
+
+  const isLoggedIn = !!identity && !identity.getPrincipal().isAnonymous();
+
+  useEffect(() => {
+    if (isLoggedIn && open) {
+      onOpenChange(false);
+      void navigate({ to: "/dashboard" });
+    }
+  }, [isLoggedIn, open, onOpenChange, navigate]);
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent
+        className="max-w-sm border-border bg-white"
+        data-ocid="nav.login.dialog"
+      >
+        <DialogHeader className="items-center text-center">
+          <div className="w-14 h-14 bg-bank-navy rounded-2xl flex items-center justify-center mx-auto mb-2">
+            <Building2 className="h-7 w-7 text-bank-gold" />
+          </div>
+          <DialogTitle className="font-display text-2xl text-bank-navy">
+            Online Banking Login
+          </DialogTitle>
+          <p className="text-muted-foreground text-sm">
+            Sign in to access your TRUPTAR Bank account
+          </p>
+        </DialogHeader>
+
+        <div className="space-y-4 pt-2">
+          <div className="bg-bank-navy/5 rounded-lg p-4 flex items-start gap-3">
+            <Shield className="h-5 w-5 text-bank-navy mt-0.5 shrink-0" />
+            <p className="text-sm text-bank-navy/80">
+              TRUPTAR Bank uses Internet Identity for secure, password-free
+              authentication powered by cryptographic keys.
+            </p>
+          </div>
+
+          <Button
+            onClick={login}
+            disabled={isLoggingIn}
+            className="w-full bg-bank-navy text-white hover:bg-bank-navy/90 font-semibold"
+            data-ocid="nav.login.submit.button"
+          >
+            {isLoggingIn ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Connecting...
+              </>
+            ) : (
+              "Sign In with Internet Identity"
+            )}
+          </Button>
+
+          <Button
+            variant="ghost"
+            className="w-full text-muted-foreground hover:text-bank-navy"
+            onClick={() => onOpenChange(false)}
+            data-ocid="nav.login.close.button"
+          >
+            Cancel
+          </Button>
+
+          <p className="text-center text-xs text-muted-foreground">
+            Your credentials are never shared with TRUPTAR Bank. Secured by the
+            Internet Computer.
+          </p>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 export default function Navbar() {
-  const [open, setOpen] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [loginOpen, setLoginOpen] = useState(false);
+  const { identity } = useInternetIdentity();
+  const navigate = useNavigate();
+
+  const isLoggedIn = !!identity && !identity.getPrincipal().isAnonymous();
+
+  function handleBankingClick() {
+    if (isLoggedIn) {
+      void navigate({ to: "/dashboard" });
+    } else {
+      setLoginOpen(true);
+    }
+  }
+
   return (
     <nav className="sticky top-0 z-50 bg-bank-navy border-b border-bank-navy/80 shadow-md">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -27,6 +129,7 @@ export default function Navbar() {
               TRUPTAR Bank
             </span>
           </Link>
+
           <div className="hidden md:flex items-center gap-6">
             {navLinks.map((l) => (
               <Link
@@ -39,49 +142,58 @@ export default function Navbar() {
               </Link>
             ))}
             <Button
-              asChild
               size="sm"
               className="bg-bank-gold text-bank-navy hover:bg-bank-gold/90 font-semibold"
-              data-ocid="nav.online_banking.button"
+              onClick={handleBankingClick}
+              data-ocid="nav.login.open_modal_button"
             >
-              <Link to="/dashboard">Online Banking</Link>
+              Online Banking
             </Button>
           </div>
+
           <button
             type="button"
             className="md:hidden text-white"
-            onClick={() => setOpen(!open)}
+            onClick={() => setMenuOpen(!menuOpen)}
             data-ocid="nav.menu.toggle"
           >
-            {open ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
+            {menuOpen ? (
+              <X className="h-6 w-6" />
+            ) : (
+              <Menu className="h-6 w-6" />
+            )}
           </button>
         </div>
       </div>
-      {open && (
+
+      {menuOpen && (
         <div className="md:hidden bg-bank-navy border-t border-white/10 px-4 py-4 flex flex-col gap-3">
           {navLinks.map((l) => (
             <Link
               key={l.to}
               to={l.to}
               className="text-white/80 hover:text-bank-gold py-1 text-sm font-medium"
-              onClick={() => setOpen(false)}
+              onClick={() => setMenuOpen(false)}
               data-ocid={`nav.mobile.${l.label.toLowerCase()}.link`}
             >
               {l.label}
             </Link>
           ))}
           <Button
-            asChild
             size="sm"
             className="bg-bank-gold text-bank-navy hover:bg-bank-gold/90 font-semibold w-full mt-2"
-            data-ocid="nav.mobile.online_banking.button"
+            onClick={() => {
+              setMenuOpen(false);
+              handleBankingClick();
+            }}
+            data-ocid="nav.mobile.login.open_modal_button"
           >
-            <Link to="/dashboard" onClick={() => setOpen(false)}>
-              Online Banking
-            </Link>
+            Online Banking
           </Button>
         </div>
       )}
+
+      <LoginDialog open={loginOpen} onOpenChange={setLoginOpen} />
     </nav>
   );
 }
