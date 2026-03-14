@@ -8,6 +8,26 @@
 
 import { IDL } from '@icp-sdk/core/candid';
 
+export const AdvisoryBooking = IDL.Record({
+  'consultationTopic' : IDL.Text,
+  'name' : IDL.Text,
+  'businessType' : IDL.Text,
+  'preferredDate' : IDL.Text,
+});
+export const LoanStatus = IDL.Variant({
+  'pending' : IDL.Null,
+  'approved' : IDL.Null,
+  'rejected' : IDL.Null,
+});
+export const BusinessLoanApplication = IDL.Record({
+  'status' : LoanStatus,
+  'businessName' : IDL.Text,
+  'businessType' : IDL.Text,
+  'submittedAt' : IDL.Text,
+  'loanAmountRequested' : IDL.Float64,
+  'annualRevenue' : IDL.Float64,
+  'loanPurpose' : IDL.Text,
+});
 export const UserRole = IDL.Variant({
   'admin' : IDL.Null,
   'user' : IDL.Null,
@@ -17,6 +37,17 @@ export const AccountApplication = IDL.Record({
   'fullName' : IDL.Text,
   'email' : IDL.Text,
   'accountType' : IDL.Text,
+});
+export const BusinessPayment = IDL.Record({
+  'date' : IDL.Text,
+  'recipient' : IDL.Text,
+  'description' : IDL.Text,
+  'amount' : IDL.Float64,
+});
+export const BusinessAccount = IDL.Record({
+  'incomingPayments' : IDL.Vec(BusinessPayment),
+  'outgoingPayments' : IDL.Vec(BusinessPayment),
+  'businessBalance' : IDL.Float64,
 });
 export const UserProfile = IDL.Record({ 'name' : IDL.Text });
 export const ContactFormSubmission = IDL.Record({
@@ -30,6 +61,20 @@ export const LoanApplication = IDL.Record({
   'loanType' : IDL.Text,
   'amount' : IDL.Float64,
 });
+export const PayrollRecord = IDL.Record({
+  'employeeName' : IDL.Text,
+  'salaryAmount' : IDL.Float64,
+  'paymentDate' : IDL.Text,
+});
+export const SavingsAccountInfo = IDL.Record({
+  'lastInterestCredited' : IDL.Text,
+  'balance' : IDL.Float64,
+  'accountId' : IDL.Text,
+  'totalInterestEarned' : IDL.Float64,
+  'createdAt' : IDL.Text,
+  'updatedAt' : IDL.Text,
+  'interestRate' : IDL.Float64,
+});
 export const Transaction = IDL.Record({
   'date' : IDL.Text,
   'description' : IDL.Text,
@@ -39,6 +84,21 @@ export const Transaction = IDL.Record({
 
 export const idlService = IDL.Service({
   '_initializeAccessControlWithSecret' : IDL.Func([IDL.Text], [], []),
+  'adminGetAdvisoryBookings' : IDL.Func(
+      [],
+      [IDL.Vec(AdvisoryBooking)],
+      ['query'],
+    ),
+  'adminGetAllBusinessLoanApplications' : IDL.Func(
+      [],
+      [IDL.Vec(IDL.Tuple(IDL.Principal, IDL.Vec(BusinessLoanApplication)))],
+      ['query'],
+    ),
+  'adminUpdateBusinessLoanStatus' : IDL.Func(
+      [IDL.Nat, LoanStatus, IDL.Principal],
+      [],
+      [],
+    ),
   'applyForAccount' : IDL.Func([IDL.Text, IDL.Text, IDL.Text], [], []),
   'applyForLoan' : IDL.Func(
       [IDL.Text, IDL.Text, IDL.Text, IDL.Float64],
@@ -46,17 +106,28 @@ export const idlService = IDL.Service({
       [],
     ),
   'assignCallerUserRole' : IDL.Func([IDL.Principal, UserRole], [], []),
+  'creditMonthlyInterest' : IDL.Func([IDL.Text], [IDL.Float64], []),
   'deposit' : IDL.Func([IDL.Float64, IDL.Text, IDL.Text], [], []),
+  'depositToSavings' : IDL.Func([IDL.Float64, IDL.Text], [], []),
   'getAccountApplications' : IDL.Func(
       [],
       [IDL.Vec(AccountApplication)],
       ['query'],
     ),
   'getBalance' : IDL.Func([], [IDL.Float64], ['query']),
+  'getBusinessAccount' : IDL.Func([], [BusinessAccount], []),
   'getCallerUserProfile' : IDL.Func([], [IDL.Opt(UserProfile)], ['query']),
   'getCallerUserRole' : IDL.Func([], [UserRole], ['query']),
   'getContactForms' : IDL.Func([], [IDL.Vec(ContactFormSubmission)], ['query']),
   'getLoanApplications' : IDL.Func([], [IDL.Vec(LoanApplication)], ['query']),
+  'getMyBusinessLoanApplications' : IDL.Func(
+      [],
+      [IDL.Vec(BusinessLoanApplication)],
+      ['query'],
+    ),
+  'getPayrollHistory' : IDL.Func([], [IDL.Vec(PayrollRecord)], ['query']),
+  'getSavingsAccount' : IDL.Func([], [IDL.Opt(SavingsAccountInfo)], ['query']),
+  'getSavingsTransactions' : IDL.Func([], [IDL.Vec(Transaction)], ['query']),
   'getTransactions' : IDL.Func([], [IDL.Vec(Transaction)], ['query']),
   'getUserProfile' : IDL.Func(
       [IDL.Principal],
@@ -64,14 +135,58 @@ export const idlService = IDL.Service({
       ['query'],
     ),
   'isCallerAdmin' : IDL.Func([], [IDL.Bool], ['query']),
+  'openSavingsAccount' : IDL.Func([IDL.Text], [SavingsAccountInfo], []),
+  'processPayroll' : IDL.Func([IDL.Text, IDL.Float64, IDL.Text], [], []),
+  'recordIncomingBusinessPayment' : IDL.Func(
+      [IDL.Float64, IDL.Text, IDL.Text, IDL.Text],
+      [],
+      [],
+    ),
   'saveCallerUserProfile' : IDL.Func([UserProfile], [], []),
+  'scheduleAdvisoryMeeting' : IDL.Func(
+      [IDL.Text, IDL.Text, IDL.Text, IDL.Text],
+      [],
+      [],
+    ),
+  'sendBusinessPayment' : IDL.Func(
+      [IDL.Float64, IDL.Text, IDL.Text, IDL.Text],
+      [],
+      [],
+    ),
+  'submitBusinessLoanApplication' : IDL.Func(
+      [IDL.Text, IDL.Text, IDL.Float64, IDL.Float64, IDL.Text, IDL.Text],
+      [],
+      [],
+    ),
   'submitContactForm' : IDL.Func([IDL.Text, IDL.Text, IDL.Text], [], []),
+  'transferFromSavings' : IDL.Func([IDL.Float64, IDL.Text, IDL.Text], [], []),
   'withdraw' : IDL.Func([IDL.Float64, IDL.Text, IDL.Text], [], []),
+  'withdrawFromSavings' : IDL.Func([IDL.Float64, IDL.Text], [], []),
 });
 
 export const idlInitArgs = [];
 
 export const idlFactory = ({ IDL }) => {
+  const AdvisoryBooking = IDL.Record({
+    'consultationTopic' : IDL.Text,
+    'name' : IDL.Text,
+    'businessType' : IDL.Text,
+    'preferredDate' : IDL.Text,
+  });
+  const LoanStatus = IDL.Variant({
+    'pending' : IDL.Null,
+    'approved' : IDL.Null,
+    'rejected' : IDL.Null,
+  });
+  const BusinessLoanApplication = IDL.Record({
+    'status' : LoanStatus,
+    'businessName' : IDL.Text,
+    'businessType' : IDL.Text,
+    'submittedAt' : IDL.Text,
+    'loanAmountRequested' : IDL.Float64,
+    'annualRevenue' : IDL.Float64,
+    'loanPurpose' : IDL.Text,
+  });
   const UserRole = IDL.Variant({
     'admin' : IDL.Null,
     'user' : IDL.Null,
@@ -81,6 +196,17 @@ export const idlFactory = ({ IDL }) => {
     'fullName' : IDL.Text,
     'email' : IDL.Text,
     'accountType' : IDL.Text,
+  });
+  const BusinessPayment = IDL.Record({
+    'date' : IDL.Text,
+    'recipient' : IDL.Text,
+    'description' : IDL.Text,
+    'amount' : IDL.Float64,
+  });
+  const BusinessAccount = IDL.Record({
+    'incomingPayments' : IDL.Vec(BusinessPayment),
+    'outgoingPayments' : IDL.Vec(BusinessPayment),
+    'businessBalance' : IDL.Float64,
   });
   const UserProfile = IDL.Record({ 'name' : IDL.Text });
   const ContactFormSubmission = IDL.Record({
@@ -94,6 +220,20 @@ export const idlFactory = ({ IDL }) => {
     'loanType' : IDL.Text,
     'amount' : IDL.Float64,
   });
+  const PayrollRecord = IDL.Record({
+    'employeeName' : IDL.Text,
+    'salaryAmount' : IDL.Float64,
+    'paymentDate' : IDL.Text,
+  });
+  const SavingsAccountInfo = IDL.Record({
+    'lastInterestCredited' : IDL.Text,
+    'balance' : IDL.Float64,
+    'accountId' : IDL.Text,
+    'totalInterestEarned' : IDL.Float64,
+    'createdAt' : IDL.Text,
+    'updatedAt' : IDL.Text,
+    'interestRate' : IDL.Float64,
+  });
   const Transaction = IDL.Record({
     'date' : IDL.Text,
     'description' : IDL.Text,
@@ -103,6 +243,21 @@ export const idlFactory = ({ IDL }) => {
   
   return IDL.Service({
     '_initializeAccessControlWithSecret' : IDL.Func([IDL.Text], [], []),
+    'adminGetAdvisoryBookings' : IDL.Func(
+        [],
+        [IDL.Vec(AdvisoryBooking)],
+        ['query'],
+      ),
+    'adminGetAllBusinessLoanApplications' : IDL.Func(
+        [],
+        [IDL.Vec(IDL.Tuple(IDL.Principal, IDL.Vec(BusinessLoanApplication)))],
+        ['query'],
+      ),
+    'adminUpdateBusinessLoanStatus' : IDL.Func(
+        [IDL.Nat, LoanStatus, IDL.Principal],
+        [],
+        [],
+      ),
     'applyForAccount' : IDL.Func([IDL.Text, IDL.Text, IDL.Text], [], []),
     'applyForLoan' : IDL.Func(
         [IDL.Text, IDL.Text, IDL.Text, IDL.Float64],
@@ -110,13 +265,16 @@ export const idlFactory = ({ IDL }) => {
         [],
       ),
     'assignCallerUserRole' : IDL.Func([IDL.Principal, UserRole], [], []),
+    'creditMonthlyInterest' : IDL.Func([IDL.Text], [IDL.Float64], []),
     'deposit' : IDL.Func([IDL.Float64, IDL.Text, IDL.Text], [], []),
+    'depositToSavings' : IDL.Func([IDL.Float64, IDL.Text], [], []),
     'getAccountApplications' : IDL.Func(
         [],
         [IDL.Vec(AccountApplication)],
         ['query'],
       ),
     'getBalance' : IDL.Func([], [IDL.Float64], ['query']),
+    'getBusinessAccount' : IDL.Func([], [BusinessAccount], []),
     'getCallerUserProfile' : IDL.Func([], [IDL.Opt(UserProfile)], ['query']),
     'getCallerUserRole' : IDL.Func([], [UserRole], ['query']),
     'getContactForms' : IDL.Func(
@@ -125,6 +283,18 @@ export const idlFactory = ({ IDL }) => {
         ['query'],
       ),
     'getLoanApplications' : IDL.Func([], [IDL.Vec(LoanApplication)], ['query']),
+    'getMyBusinessLoanApplications' : IDL.Func(
+        [],
+        [IDL.Vec(BusinessLoanApplication)],
+        ['query'],
+      ),
+    'getPayrollHistory' : IDL.Func([], [IDL.Vec(PayrollRecord)], ['query']),
+    'getSavingsAccount' : IDL.Func(
+        [],
+        [IDL.Opt(SavingsAccountInfo)],
+        ['query'],
+      ),
+    'getSavingsTransactions' : IDL.Func([], [IDL.Vec(Transaction)], ['query']),
     'getTransactions' : IDL.Func([], [IDL.Vec(Transaction)], ['query']),
     'getUserProfile' : IDL.Func(
         [IDL.Principal],
@@ -132,9 +302,33 @@ export const idlFactory = ({ IDL }) => {
         ['query'],
       ),
     'isCallerAdmin' : IDL.Func([], [IDL.Bool], ['query']),
+    'openSavingsAccount' : IDL.Func([IDL.Text], [SavingsAccountInfo], []),
+    'processPayroll' : IDL.Func([IDL.Text, IDL.Float64, IDL.Text], [], []),
+    'recordIncomingBusinessPayment' : IDL.Func(
+        [IDL.Float64, IDL.Text, IDL.Text, IDL.Text],
+        [],
+        [],
+      ),
     'saveCallerUserProfile' : IDL.Func([UserProfile], [], []),
+    'scheduleAdvisoryMeeting' : IDL.Func(
+        [IDL.Text, IDL.Text, IDL.Text, IDL.Text],
+        [],
+        [],
+      ),
+    'sendBusinessPayment' : IDL.Func(
+        [IDL.Float64, IDL.Text, IDL.Text, IDL.Text],
+        [],
+        [],
+      ),
+    'submitBusinessLoanApplication' : IDL.Func(
+        [IDL.Text, IDL.Text, IDL.Float64, IDL.Float64, IDL.Text, IDL.Text],
+        [],
+        [],
+      ),
     'submitContactForm' : IDL.Func([IDL.Text, IDL.Text, IDL.Text], [], []),
+    'transferFromSavings' : IDL.Func([IDL.Float64, IDL.Text, IDL.Text], [], []),
     'withdraw' : IDL.Func([IDL.Float64, IDL.Text, IDL.Text], [], []),
+    'withdrawFromSavings' : IDL.Func([IDL.Float64, IDL.Text], [], []),
   });
 };
 

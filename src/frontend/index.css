@@ -1,4 +1,20 @@
-@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700;800&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap');
+
+@font-face {
+  font-family: 'Bricolage Grotesque';
+  src: url('/assets/fonts/BricolageGrotesque-Bold.woff2') format('woff2');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Bricolage Grotesque';
+  src: url('/assets/fonts/BricolageGrotesque-Regular.woff2') format('woff2');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
 
 @tailwind base;
 @tailwind components;
@@ -6,51 +22,99 @@
 
 @layer base {
   :root {
-    --radius: 0.625rem;
-    /* Deep Navy */
-    --bank-navy: 0.25 0.07 255;
-    /* Warm Gold */
-    --bank-gold: 0.76 0.13 75;
+    --radius: 0.75rem;
 
-    --background: 1 0 0;
-    --foreground: 0.145 0 0;
+    /* Brand tokens */
+    --bank-navy: 0.22 0.08 265;
+    --bank-gold: 0.78 0.14 75;
+
+    /* Semantic tokens */
+    --background: 0.99 0 0;
+    --foreground: 0.14 0.03 265;
     --card: 1 0 0;
-    --card-foreground: 0.145 0 0;
+    --card-foreground: 0.14 0.03 265;
     --popover: 1 0 0;
-    --popover-foreground: 0.145 0 0;
-    --primary: 0.25 0.07 255;
-    --primary-foreground: 0.985 0 0;
-    --secondary: 0.97 0 0;
-    --secondary-foreground: 0.205 0 0;
-    --muted: 0.97 0 0;
-    --muted-foreground: 0.556 0 0;
-    --accent: 0.97 0 0;
-    --accent-foreground: 0.205 0 0;
-    --destructive: 0.577 0.245 27.325;
-    --destructive-foreground: 0.985 0 0;
-    --border: 0.922 0 0;
-    --input: 0.922 0 0;
-    --ring: 0.708 0 0;
-    --chart-1: 0.646 0.222 41.116;
-    --chart-2: 0.6 0.118 184.704;
-    --chart-3: 0.398 0.07 227.392;
-    --chart-4: 0.828 0.189 84.429;
-    --chart-5: 0.769 0.188 70.08;
-    --sidebar: 0.985 0 0;
-    --sidebar-foreground: 0.145 0 0;
-    --sidebar-primary: 0.205 0 0;
-    --sidebar-primary-foreground: 0.985 0 0;
-    --sidebar-accent: 0.97 0 0;
-    --sidebar-accent-foreground: 0.205 0 0;
-    --sidebar-border: 0.922 0 0;
-    --sidebar-ring: 0.708 0 0;
+    --popover-foreground: 0.14 0.03 265;
+    --primary: 0.22 0.08 265;
+    --primary-foreground: 0.99 0 0;
+    --secondary: 0.94 0.02 265;
+    --secondary-foreground: 0.22 0.08 265;
+    --muted: 0.96 0.01 265;
+    --muted-foreground: 0.5 0.04 265;
+    --accent: 0.72 0.18 210;
+    --accent-foreground: 0.08 0.04 265;
+    --destructive: 0.6 0.22 25;
+    --destructive-foreground: 0.99 0 0;
+    --border: 0.9 0.02 265;
+    --input: 0.9 0.02 265;
+    --ring: 0.22 0.08 265;
+
+    /* Charts */
+    --chart-1: 0.72 0.18 210;
+    --chart-2: 0.62 0.16 160;
+    --chart-3: 0.78 0.14 75;
+    --chart-4: 0.65 0.18 20;
+    --chart-5: 0.55 0.2 280;
+
+    /* Sidebar */
+    --sidebar: 0.18 0.06 265;
+    --sidebar-foreground: 0.95 0.01 265;
+    --sidebar-primary: 0.78 0.14 75;
+    --sidebar-primary-foreground: 0.12 0.06 265;
+    --sidebar-accent: 0.28 0.09 265;
+    --sidebar-accent-foreground: 0.95 0.01 265;
+    --sidebar-border: 0.3 0.06 265;
+    --sidebar-ring: 0.78 0.14 75;
   }
 
   * {
     @apply border-border;
   }
+
   body {
     @apply bg-background text-foreground;
     font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
+  }
+}
+
+@layer utilities {
+  .mesh-gradient {
+    background: linear-gradient(
+      135deg,
+      oklch(0.16 0.09 265) 0%,
+      oklch(0.20 0.14 240) 30%,
+      oklch(0.22 0.16 210) 55%,
+      oklch(0.18 0.10 180) 80%,
+      oklch(0.16 0.08 265) 100%
+    );
+  }
+
+  .dot-grid {
+    background-image: radial-gradient(circle, oklch(0.72 0.18 210 / 0.12) 1px, transparent 1px);
+    background-size: 24px 24px;
+  }
+
+  .glass-card {
+    background: oklch(1 0 0 / 0.06);
+    backdrop-filter: blur(12px);
+    border: 1px solid oklch(1 0 0 / 0.12);
+  }
+
+  .gradient-border {
+    position: relative;
+  }
+
+  .gradient-border::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    padding: 1px;
+    background: linear-gradient(135deg, oklch(0.72 0.18 210), oklch(0.78 0.14 75), oklch(0.65 0.18 20));
+    -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+    pointer-events: none;
   }
 }

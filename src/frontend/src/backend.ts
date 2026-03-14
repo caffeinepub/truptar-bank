@@ -94,16 +94,56 @@ export interface ContactFormSubmission {
     email: string;
     message: string;
 }
+export interface SavingsAccountInfo {
+    lastInterestCredited: string;
+    balance: number;
+    accountId: string;
+    totalInterestEarned: number;
+    createdAt: string;
+    updatedAt: string;
+    interestRate: number;
+}
+export interface BusinessPayment {
+    date: string;
+    recipient: string;
+    description: string;
+    amount: number;
+}
+export interface AdvisoryBooking {
+    consultationTopic: string;
+    name: string;
+    businessType: string;
+    preferredDate: string;
+}
+export interface BusinessAccount {
+    incomingPayments: Array<BusinessPayment>;
+    outgoingPayments: Array<BusinessPayment>;
+    businessBalance: number;
+}
+export interface AccountApplication {
+    fullName: string;
+    email: string;
+    accountType: string;
+}
 export interface LoanApplication {
     fullName: string;
     email: string;
     loanType: string;
     amount: number;
 }
-export interface AccountApplication {
-    fullName: string;
-    email: string;
-    accountType: string;
+export interface BusinessLoanApplication {
+    status: LoanStatus;
+    businessName: string;
+    businessType: string;
+    submittedAt: string;
+    loanAmountRequested: number;
+    annualRevenue: number;
+    loanPurpose: string;
+}
+export interface PayrollRecord {
+    employeeName: string;
+    salaryAmount: number;
+    paymentDate: string;
 }
 export interface UserProfile {
     name: string;
@@ -114,6 +154,11 @@ export interface Transaction {
     isDeposit: boolean;
     amount: number;
 }
+export enum LoanStatus {
+    pending = "pending",
+    approved = "approved",
+    rejected = "rejected"
+}
 export enum UserRole {
     admin = "admin",
     user = "user",
@@ -121,24 +166,42 @@ export enum UserRole {
 }
 export interface backendInterface {
     _initializeAccessControlWithSecret(userSecret: string): Promise<void>;
+    adminGetAdvisoryBookings(): Promise<Array<AdvisoryBooking>>;
+    adminGetAllBusinessLoanApplications(): Promise<Array<[Principal, Array<BusinessLoanApplication>]>>;
+    adminUpdateBusinessLoanStatus(appIndex: bigint, newStatus: LoanStatus, user: Principal): Promise<void>;
     applyForAccount(fullName: string, email: string, accountType: string): Promise<void>;
     applyForLoan(fullName: string, email: string, loanType: string, amount: number): Promise<void>;
     assignCallerUserRole(user: Principal, role: UserRole): Promise<void>;
+    creditMonthlyInterest(currentDate: string): Promise<number>;
     deposit(amount: number, description: string, date: string): Promise<void>;
+    depositToSavings(amount: number, date: string): Promise<void>;
     getAccountApplications(): Promise<Array<AccountApplication>>;
     getBalance(): Promise<number>;
+    getBusinessAccount(): Promise<BusinessAccount>;
     getCallerUserProfile(): Promise<UserProfile | null>;
     getCallerUserRole(): Promise<UserRole>;
     getContactForms(): Promise<Array<ContactFormSubmission>>;
     getLoanApplications(): Promise<Array<LoanApplication>>;
+    getMyBusinessLoanApplications(): Promise<Array<BusinessLoanApplication>>;
+    getPayrollHistory(): Promise<Array<PayrollRecord>>;
+    getSavingsAccount(): Promise<SavingsAccountInfo | null>;
+    getSavingsTransactions(): Promise<Array<Transaction>>;
     getTransactions(): Promise<Array<Transaction>>;
     getUserProfile(user: Principal): Promise<UserProfile | null>;
     isCallerAdmin(): Promise<boolean>;
+    openSavingsAccount(currentDate: string): Promise<SavingsAccountInfo>;
+    processPayroll(employeeName: string, salaryAmount: number, paymentDate: string): Promise<void>;
+    recordIncomingBusinessPayment(amount: number, from: string, date: string, description: string): Promise<void>;
     saveCallerUserProfile(profile: UserProfile): Promise<void>;
+    scheduleAdvisoryMeeting(name: string, businessType: string, consultationTopic: string, preferredDate: string): Promise<void>;
+    sendBusinessPayment(amount: number, recipient: string, date: string, description: string): Promise<void>;
+    submitBusinessLoanApplication(businessName: string, businessType: string, annualRevenue: number, loanAmountRequested: number, loanPurpose: string, submittedAt: string): Promise<void>;
     submitContactForm(name: string, email: string, message: string): Promise<void>;
+    transferFromSavings(amount: number, toAccountId: string, date: string): Promise<void>;
     withdraw(amount: number, description: string, date: string): Promise<void>;
+    withdrawFromSavings(amount: number, date: string): Promise<void>;
 }
-import type { UserProfile as _UserProfile, UserRole as _UserRole } from "./declarations/backend.did.d.ts";
+import type { BusinessLoanApplication as _BusinessLoanApplication, LoanStatus as _LoanStatus, SavingsAccountInfo as _SavingsAccountInfo, UserProfile as _UserProfile, UserRole as _UserRole } from "./declarations/backend.did.d.ts";
 export class Backend implements backendInterface {
     constructor(private actor: ActorSubclass<_SERVICE>, private _uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, private _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, private processError?: (error: unknown) => never){}
     async _initializeAccessControlWithSecret(arg0: string): Promise<void> {
@@ -152,6 +215,48 @@ export class Backend implements backendInterface {
             }
         } else {
             const result = await this.actor._initializeAccessControlWithSecret(arg0);
+            return result;
+        }
+    }
+    async adminGetAdvisoryBookings(): Promise<Array<AdvisoryBooking>> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.adminGetAdvisoryBookings();
+                return result;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.adminGetAdvisoryBookings();
+            return result;
+        }
+    }
+    async adminGetAllBusinessLoanApplications(): Promise<Array<[Principal, Array<BusinessLoanApplication>]>> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.adminGetAllBusinessLoanApplications();
+                return from_candid_vec_n1(this._uploadFile, this._downloadFile, result);
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.adminGetAllBusinessLoanApplications();
+            return from_candid_vec_n1(this._uploadFile, this._downloadFile, result);
+        }
+    }
+    async adminUpdateBusinessLoanStatus(arg0: bigint, arg1: LoanStatus, arg2: Principal): Promise<void> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.adminUpdateBusinessLoanStatus(arg0, to_candid_LoanStatus_n8(this._uploadFile, this._downloadFile, arg1), arg2);
+                return result;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.adminUpdateBusinessLoanStatus(arg0, to_candid_LoanStatus_n8(this._uploadFile, this._downloadFile, arg1), arg2);
             return result;
         }
     }
@@ -186,14 +291,28 @@ export class Backend implements backendInterface {
     async assignCallerUserRole(arg0: Principal, arg1: UserRole): Promise<void> {
         if (this.processError) {
             try {
-                const result = await this.actor.assignCallerUserRole(arg0, to_candid_UserRole_n1(this._uploadFile, this._downloadFile, arg1));
+                const result = await this.actor.assignCallerUserRole(arg0, to_candid_UserRole_n10(this._uploadFile, this._downloadFile, arg1));
                 return result;
             } catch (e) {
                 this.processError(e);
                 throw new Error("unreachable");
             }
         } else {
-            const result = await this.actor.assignCallerUserRole(arg0, to_candid_UserRole_n1(this._uploadFile, this._downloadFile, arg1));
+            const result = await this.actor.assignCallerUserRole(arg0, to_candid_UserRole_n10(this._uploadFile, this._downloadFile, arg1));
+            return result;
+        }
+    }
+    async creditMonthlyInterest(arg0: string): Promise<number> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.creditMonthlyInterest(arg0);
+                return result;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.creditMonthlyInterest(arg0);
             return result;
         }
     }
@@ -208,6 +327,20 @@ export class Backend implements backendInterface {
             }
         } else {
             const result = await this.actor.deposit(arg0, arg1, arg2);
+            return result;
+        }
+    }
+    async depositToSavings(arg0: number, arg1: string): Promise<void> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.depositToSavings(arg0, arg1);
+                return result;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.depositToSavings(arg0, arg1);
             return result;
         }
     }
@@ -239,32 +372,46 @@ export class Backend implements backendInterface {
             return result;
         }
     }
+    async getBusinessAccount(): Promise<BusinessAccount> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.getBusinessAccount();
+                return result;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.getBusinessAccount();
+            return result;
+        }
+    }
     async getCallerUserProfile(): Promise<UserProfile | null> {
         if (this.processError) {
             try {
                 const result = await this.actor.getCallerUserProfile();
-                return from_candid_opt_n3(this._uploadFile, this._downloadFile, result);
+                return from_candid_opt_n12(this._uploadFile, this._downloadFile, result);
             } catch (e) {
                 this.processError(e);
                 throw new Error("unreachable");
             }
         } else {
             const result = await this.actor.getCallerUserProfile();
-            return from_candid_opt_n3(this._uploadFile, this._downloadFile, result);
+            return from_candid_opt_n12(this._uploadFile, this._downloadFile, result);
         }
     }
     async getCallerUserRole(): Promise<UserRole> {
         if (this.processError) {
             try {
                 const result = await this.actor.getCallerUserRole();
-                return from_candid_UserRole_n4(this._uploadFile, this._downloadFile, result);
+                return from_candid_UserRole_n13(this._uploadFile, this._downloadFile, result);
             } catch (e) {
                 this.processError(e);
                 throw new Error("unreachable");
             }
         } else {
             const result = await this.actor.getCallerUserRole();
-            return from_candid_UserRole_n4(this._uploadFile, this._downloadFile, result);
+            return from_candid_UserRole_n13(this._uploadFile, this._downloadFile, result);
         }
     }
     async getContactForms(): Promise<Array<ContactFormSubmission>> {
@@ -295,6 +442,62 @@ export class Backend implements backendInterface {
             return result;
         }
     }
+    async getMyBusinessLoanApplications(): Promise<Array<BusinessLoanApplication>> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.getMyBusinessLoanApplications();
+                return from_candid_vec_n3(this._uploadFile, this._downloadFile, result);
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.getMyBusinessLoanApplications();
+            return from_candid_vec_n3(this._uploadFile, this._downloadFile, result);
+        }
+    }
+    async getPayrollHistory(): Promise<Array<PayrollRecord>> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.getPayrollHistory();
+                return result;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.getPayrollHistory();
+            return result;
+        }
+    }
+    async getSavingsAccount(): Promise<SavingsAccountInfo | null> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.getSavingsAccount();
+                return from_candid_opt_n15(this._uploadFile, this._downloadFile, result);
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.getSavingsAccount();
+            return from_candid_opt_n15(this._uploadFile, this._downloadFile, result);
+        }
+    }
+    async getSavingsTransactions(): Promise<Array<Transaction>> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.getSavingsTransactions();
+                return result;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.getSavingsTransactions();
+            return result;
+        }
+    }
     async getTransactions(): Promise<Array<Transaction>> {
         if (this.processError) {
             try {
@@ -313,14 +516,14 @@ export class Backend implements backendInterface {
         if (this.processError) {
             try {
                 const result = await this.actor.getUserProfile(arg0);
-                return from_candid_opt_n3(this._uploadFile, this._downloadFile, result);
+                return from_candid_opt_n12(this._uploadFile, this._downloadFile, result);
             } catch (e) {
                 this.processError(e);
                 throw new Error("unreachable");
             }
         } else {
             const result = await this.actor.getUserProfile(arg0);
-            return from_candid_opt_n3(this._uploadFile, this._downloadFile, result);
+            return from_candid_opt_n12(this._uploadFile, this._downloadFile, result);
         }
     }
     async isCallerAdmin(): Promise<boolean> {
@@ -334,6 +537,48 @@ export class Backend implements backendInterface {
             }
         } else {
             const result = await this.actor.isCallerAdmin();
+            return result;
+        }
+    }
+    async openSavingsAccount(arg0: string): Promise<SavingsAccountInfo> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.openSavingsAccount(arg0);
+                return result;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.openSavingsAccount(arg0);
+            return result;
+        }
+    }
+    async processPayroll(arg0: string, arg1: number, arg2: string): Promise<void> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.processPayroll(arg0, arg1, arg2);
+                return result;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.processPayroll(arg0, arg1, arg2);
+            return result;
+        }
+    }
+    async recordIncomingBusinessPayment(arg0: number, arg1: string, arg2: string, arg3: string): Promise<void> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.recordIncomingBusinessPayment(arg0, arg1, arg2, arg3);
+                return result;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.recordIncomingBusinessPayment(arg0, arg1, arg2, arg3);
             return result;
         }
     }
@@ -351,6 +596,48 @@ export class Backend implements backendInterface {
             return result;
         }
     }
+    async scheduleAdvisoryMeeting(arg0: string, arg1: string, arg2: string, arg3: string): Promise<void> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.scheduleAdvisoryMeeting(arg0, arg1, arg2, arg3);
+                return result;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.scheduleAdvisoryMeeting(arg0, arg1, arg2, arg3);
+            return result;
+        }
+    }
+    async sendBusinessPayment(arg0: number, arg1: string, arg2: string, arg3: string): Promise<void> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.sendBusinessPayment(arg0, arg1, arg2, arg3);
+                return result;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.sendBusinessPayment(arg0, arg1, arg2, arg3);
+            return result;
+        }
+    }
+    async submitBusinessLoanApplication(arg0: string, arg1: string, arg2: number, arg3: number, arg4: string, arg5: string): Promise<void> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.submitBusinessLoanApplication(arg0, arg1, arg2, arg3, arg4, arg5);
+                return result;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.submitBusinessLoanApplication(arg0, arg1, arg2, arg3, arg4, arg5);
+            return result;
+        }
+    }
     async submitContactForm(arg0: string, arg1: string, arg2: string): Promise<void> {
         if (this.processError) {
             try {
@@ -362,6 +649,20 @@ export class Backend implements backendInterface {
             }
         } else {
             const result = await this.actor.submitContactForm(arg0, arg1, arg2);
+            return result;
+        }
+    }
+    async transferFromSavings(arg0: number, arg1: string, arg2: string): Promise<void> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.transferFromSavings(arg0, arg1, arg2);
+                return result;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.transferFromSavings(arg0, arg1, arg2);
             return result;
         }
     }
@@ -379,14 +680,70 @@ export class Backend implements backendInterface {
             return result;
         }
     }
+    async withdrawFromSavings(arg0: number, arg1: string): Promise<void> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.withdrawFromSavings(arg0, arg1);
+                return result;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.withdrawFromSavings(arg0, arg1);
+            return result;
+        }
+    }
 }
-function from_candid_UserRole_n4(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: _UserRole): UserRole {
-    return from_candid_variant_n5(_uploadFile, _downloadFile, value);
+function from_candid_BusinessLoanApplication_n4(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: _BusinessLoanApplication): BusinessLoanApplication {
+    return from_candid_record_n5(_uploadFile, _downloadFile, value);
 }
-function from_candid_opt_n3(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: [] | [_UserProfile]): UserProfile | null {
+function from_candid_LoanStatus_n6(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: _LoanStatus): LoanStatus {
+    return from_candid_variant_n7(_uploadFile, _downloadFile, value);
+}
+function from_candid_UserRole_n13(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: _UserRole): UserRole {
+    return from_candid_variant_n14(_uploadFile, _downloadFile, value);
+}
+function from_candid_opt_n12(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: [] | [_UserProfile]): UserProfile | null {
     return value.length === 0 ? null : value[0];
 }
-function from_candid_variant_n5(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
+function from_candid_opt_n15(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: [] | [_SavingsAccountInfo]): SavingsAccountInfo | null {
+    return value.length === 0 ? null : value[0];
+}
+function from_candid_record_n5(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
+    status: _LoanStatus;
+    businessName: string;
+    businessType: string;
+    submittedAt: string;
+    loanAmountRequested: number;
+    annualRevenue: number;
+    loanPurpose: string;
+}): {
+    status: LoanStatus;
+    businessName: string;
+    businessType: string;
+    submittedAt: string;
+    loanAmountRequested: number;
+    annualRevenue: number;
+    loanPurpose: string;
+} {
+    return {
+        status: from_candid_LoanStatus_n6(_uploadFile, _downloadFile, value.status),
+        businessName: value.businessName,
+        businessType: value.businessType,
+        submittedAt: value.submittedAt,
+        loanAmountRequested: value.loanAmountRequested,
+        annualRevenue: value.annualRevenue,
+        loanPurpose: value.loanPurpose
+    };
+}
+function from_candid_tuple_n2(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: [Principal, Array<_BusinessLoanApplication>]): [Principal, Array<BusinessLoanApplication>] {
+    return [
+        value[0],
+        from_candid_vec_n3(_uploadFile, _downloadFile, value[1])
+    ];
+}
+function from_candid_variant_n14(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
     admin: null;
 } | {
     user: null;
@@ -395,10 +752,28 @@ function from_candid_variant_n5(_uploadFile: (file: ExternalBlob) => Promise<Uin
 }): UserRole {
     return "admin" in value ? UserRole.admin : "user" in value ? UserRole.user : "guest" in value ? UserRole.guest : value;
 }
-function to_candid_UserRole_n1(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: UserRole): _UserRole {
-    return to_candid_variant_n2(_uploadFile, _downloadFile, value);
+function from_candid_variant_n7(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
+    pending: null;
+} | {
+    approved: null;
+} | {
+    rejected: null;
+}): LoanStatus {
+    return "pending" in value ? LoanStatus.pending : "approved" in value ? LoanStatus.approved : "rejected" in value ? LoanStatus.rejected : value;
 }
-function to_candid_variant_n2(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: UserRole): {
+function from_candid_vec_n1(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: Array<[Principal, Array<_BusinessLoanApplication>]>): Array<[Principal, Array<BusinessLoanApplication>]> {
+    return value.map((x)=>from_candid_tuple_n2(_uploadFile, _downloadFile, x));
+}
+function from_candid_vec_n3(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: Array<_BusinessLoanApplication>): Array<BusinessLoanApplication> {
+    return value.map((x)=>from_candid_BusinessLoanApplication_n4(_uploadFile, _downloadFile, x));
+}
+function to_candid_LoanStatus_n8(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: LoanStatus): _LoanStatus {
+    return to_candid_variant_n9(_uploadFile, _downloadFile, value);
+}
+function to_candid_UserRole_n10(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: UserRole): _UserRole {
+    return to_candid_variant_n11(_uploadFile, _downloadFile, value);
+}
+function to_candid_variant_n11(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: UserRole): {
     admin: null;
 } | {
     user: null;
@@ -411,6 +786,21 @@ function to_candid_variant_n2(_uploadFile: (file: ExternalBlob) => Promise<Uint8
         user: null
     } : value == UserRole.guest ? {
         guest: null
+    } : value;
+}
+function to_candid_variant_n9(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: LoanStatus): {
+    pending: null;
+} | {
+    approved: null;
+} | {
+    rejected: null;
+} {
+    return value == LoanStatus.pending ? {
+        pending: null
+    } : value == LoanStatus.approved ? {
+        approved: null
+    } : value == LoanStatus.rejected ? {
+        rejected: null
     } : value;
 }
 export interface CreateActorOptions {

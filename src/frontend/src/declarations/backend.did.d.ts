@@ -15,6 +15,32 @@ export interface AccountApplication {
   'email' : string,
   'accountType' : string,
 }
+export interface AdvisoryBooking {
+  'consultationTopic' : string,
+  'name' : string,
+  'businessType' : string,
+  'preferredDate' : string,
+}
+export interface BusinessAccount {
+  'incomingPayments' : Array<BusinessPayment>,
+  'outgoingPayments' : Array<BusinessPayment>,
+  'businessBalance' : number,
+}
+export interface BusinessLoanApplication {
+  'status' : LoanStatus,
+  'businessName' : string,
+  'businessType' : string,
+  'submittedAt' : string,
+  'loanAmountRequested' : number,
+  'annualRevenue' : number,
+  'loanPurpose' : string,
+}
+export interface BusinessPayment {
+  'date' : string,
+  'recipient' : string,
+  'description' : string,
+  'amount' : number,
+}
 export interface ContactFormSubmission {
   'name' : string,
   'email' : string,
@@ -25,6 +51,23 @@ export interface LoanApplication {
   'email' : string,
   'loanType' : string,
   'amount' : number,
+}
+export type LoanStatus = { 'pending' : null } |
+  { 'approved' : null } |
+  { 'rejected' : null };
+export interface PayrollRecord {
+  'employeeName' : string,
+  'salaryAmount' : number,
+  'paymentDate' : string,
+}
+export interface SavingsAccountInfo {
+  'lastInterestCredited' : string,
+  'balance' : number,
+  'accountId' : string,
+  'totalInterestEarned' : number,
+  'createdAt' : string,
+  'updatedAt' : string,
+  'interestRate' : number,
 }
 export interface Transaction {
   'date' : string,
@@ -38,22 +81,61 @@ export type UserRole = { 'admin' : null } |
   { 'guest' : null };
 export interface _SERVICE {
   '_initializeAccessControlWithSecret' : ActorMethod<[string], undefined>,
+  'adminGetAdvisoryBookings' : ActorMethod<[], Array<AdvisoryBooking>>,
+  'adminGetAllBusinessLoanApplications' : ActorMethod<
+    [],
+    Array<[Principal, Array<BusinessLoanApplication>]>
+  >,
+  'adminUpdateBusinessLoanStatus' : ActorMethod<
+    [bigint, LoanStatus, Principal],
+    undefined
+  >,
   'applyForAccount' : ActorMethod<[string, string, string], undefined>,
   'applyForLoan' : ActorMethod<[string, string, string, number], undefined>,
   'assignCallerUserRole' : ActorMethod<[Principal, UserRole], undefined>,
+  'creditMonthlyInterest' : ActorMethod<[string], number>,
   'deposit' : ActorMethod<[number, string, string], undefined>,
+  'depositToSavings' : ActorMethod<[number, string], undefined>,
   'getAccountApplications' : ActorMethod<[], Array<AccountApplication>>,
   'getBalance' : ActorMethod<[], number>,
+  'getBusinessAccount' : ActorMethod<[], BusinessAccount>,
   'getCallerUserProfile' : ActorMethod<[], [] | [UserProfile]>,
   'getCallerUserRole' : ActorMethod<[], UserRole>,
   'getContactForms' : ActorMethod<[], Array<ContactFormSubmission>>,
   'getLoanApplications' : ActorMethod<[], Array<LoanApplication>>,
+  'getMyBusinessLoanApplications' : ActorMethod<
+    [],
+    Array<BusinessLoanApplication>
+  >,
+  'getPayrollHistory' : ActorMethod<[], Array<PayrollRecord>>,
+  'getSavingsAccount' : ActorMethod<[], [] | [SavingsAccountInfo]>,
+  'getSavingsTransactions' : ActorMethod<[], Array<Transaction>>,
   'getTransactions' : ActorMethod<[], Array<Transaction>>,
   'getUserProfile' : ActorMethod<[Principal], [] | [UserProfile]>,
   'isCallerAdmin' : ActorMethod<[], boolean>,
+  'openSavingsAccount' : ActorMethod<[string], SavingsAccountInfo>,
+  'processPayroll' : ActorMethod<[string, number, string], undefined>,
+  'recordIncomingBusinessPayment' : ActorMethod<
+    [number, string, string, string],
+    undefined
+  >,
   'saveCallerUserProfile' : ActorMethod<[UserProfile], undefined>,
+  'scheduleAdvisoryMeeting' : ActorMethod<
+    [string, string, string, string],
+    undefined
+  >,
+  'sendBusinessPayment' : ActorMethod<
+    [number, string, string, string],
+    undefined
+  >,
+  'submitBusinessLoanApplication' : ActorMethod<
+    [string, string, number, number, string, string],
+    undefined
+  >,
   'submitContactForm' : ActorMethod<[string, string, string], undefined>,
+  'transferFromSavings' : ActorMethod<[number, string, string], undefined>,
   'withdraw' : ActorMethod<[number, string, string], undefined>,
+  'withdrawFromSavings' : ActorMethod<[number, string], undefined>,
 }
 export declare const idlService: IDL.ServiceClass;
 export declare const idlInitArgs: IDL.Type[];

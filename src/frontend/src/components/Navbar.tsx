@@ -6,7 +6,16 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Link, useNavigate } from "@tanstack/react-router";
-import { Building2, Loader2, Menu, Shield, X } from "lucide-react";
+import {
+  Building2,
+  Loader2,
+  Menu,
+  Shield,
+  ShieldCheck,
+  User,
+  X,
+  Zap,
+} from "lucide-react";
 import { useEffect, useState } from "react";
 import { useInternetIdentity } from "../hooks/useInternetIdentity";
 
@@ -44,10 +53,16 @@ function LoginDialog({
         data-ocid="nav.login.dialog"
       >
         <DialogHeader className="items-center text-center">
-          <div className="w-14 h-14 bg-bank-navy rounded-2xl flex items-center justify-center mx-auto mb-2">
+          <div
+            className="w-14 h-14 rounded-2xl flex items-center justify-center mx-auto mb-2"
+            style={{
+              background:
+                "linear-gradient(135deg, oklch(0.22 0.08 265), oklch(0.30 0.12 255))",
+            }}
+          >
             <Building2 className="h-7 w-7 text-bank-gold" />
           </div>
-          <DialogTitle className="font-display text-2xl text-bank-navy">
+          <DialogTitle className="font-display text-2xl text-foreground">
             Online Banking Login
           </DialogTitle>
           <p className="text-muted-foreground text-sm">
@@ -56,9 +71,9 @@ function LoginDialog({
         </DialogHeader>
 
         <div className="space-y-4 pt-2">
-          <div className="bg-bank-navy/5 rounded-lg p-4 flex items-start gap-3">
-            <Shield className="h-5 w-5 text-bank-navy mt-0.5 shrink-0" />
-            <p className="text-sm text-bank-navy/80">
+          <div className="bg-secondary rounded-xl p-4 flex items-start gap-3">
+            <Shield className="h-5 w-5 text-bank-cyan mt-0.5 shrink-0" />
+            <p className="text-sm text-foreground/80">
               TRUPTAR Bank uses Internet Identity for secure, password-free
               authentication powered by cryptographic keys.
             </p>
@@ -67,7 +82,12 @@ function LoginDialog({
           <Button
             onClick={login}
             disabled={isLoggingIn}
-            className="w-full bg-bank-navy text-white hover:bg-bank-navy/90 font-semibold"
+            className="w-full font-semibold"
+            style={{
+              background:
+                "linear-gradient(135deg, oklch(0.22 0.08 265), oklch(0.30 0.12 255))",
+              color: "white",
+            }}
             data-ocid="nav.login.submit.button"
           >
             {isLoggingIn ? (
@@ -82,7 +102,7 @@ function LoginDialog({
 
           <Button
             variant="ghost"
-            className="w-full text-muted-foreground hover:text-bank-navy"
+            className="w-full text-muted-foreground hover:text-foreground"
             onClick={() => onOpenChange(false)}
             data-ocid="nav.login.close.button"
           >
@@ -116,7 +136,14 @@ export default function Navbar() {
   }
 
   return (
-    <nav className="sticky top-0 z-50 bg-bank-navy border-b border-bank-navy/80 shadow-md">
+    <nav
+      className="sticky top-0 z-50 border-b shadow-lg"
+      style={{
+        background: "oklch(0.18 0.07 265 / 0.92)",
+        backdropFilter: "blur(16px)",
+        borderColor: "oklch(1 0 0 / 0.08)",
+      }}
+    >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
           <Link
@@ -124,7 +151,15 @@ export default function Navbar() {
             className="flex items-center gap-2"
             data-ocid="nav.home.link"
           >
-            <Building2 className="h-7 w-7 text-bank-gold" />
+            <div
+              className="w-8 h-8 rounded-lg flex items-center justify-center"
+              style={{
+                background:
+                  "linear-gradient(135deg, oklch(0.78 0.14 75), oklch(0.72 0.18 210))",
+              }}
+            >
+              <Building2 className="h-4.5 w-4.5 text-white" />
+            </div>
             <span className="font-display text-xl font-bold text-white tracking-wide">
               TRUPTAR Bank
             </span>
@@ -135,18 +170,47 @@ export default function Navbar() {
               <Link
                 key={l.to}
                 to={l.to}
-                className="text-white/80 hover:text-bank-gold transition-colors text-sm font-medium"
+                className="text-white/75 hover:text-white transition-colors text-sm font-medium relative group"
                 data-ocid={`nav.${l.label.toLowerCase()}.link`}
               >
                 {l.label}
+                <span className="absolute -bottom-1 left-0 right-0 h-0.5 bg-bank-cyan scale-x-0 group-hover:scale-x-100 transition-transform origin-left rounded-full" />
               </Link>
             ))}
+            {isLoggedIn && (
+              <>
+                <Link
+                  to="/profile"
+                  className="flex items-center gap-1.5 text-white/75 hover:text-white transition-colors text-sm font-medium relative group"
+                  data-ocid="nav.profile.link"
+                >
+                  <User className="h-4 w-4" />
+                  My Profile
+                  <span className="absolute -bottom-1 left-0 right-0 h-0.5 bg-bank-cyan scale-x-0 group-hover:scale-x-100 transition-transform origin-left rounded-full" />
+                </Link>
+                <Link
+                  to="/admin"
+                  className="flex items-center gap-1.5 text-white/75 hover:text-white transition-colors text-sm font-medium relative group"
+                  data-ocid="nav.admin.link"
+                >
+                  <ShieldCheck className="h-4 w-4" />
+                  Admin
+                  <span className="absolute -bottom-1 left-0 right-0 h-0.5 bg-bank-cyan scale-x-0 group-hover:scale-x-100 transition-transform origin-left rounded-full" />
+                </Link>
+              </>
+            )}
             <Button
               size="sm"
-              className="bg-bank-gold text-bank-navy hover:bg-bank-gold/90 font-semibold"
+              className="font-semibold rounded-lg px-5"
+              style={{
+                background:
+                  "linear-gradient(135deg, oklch(0.72 0.18 210), oklch(0.60 0.20 220))",
+                color: "white",
+              }}
               onClick={handleBankingClick}
               data-ocid="nav.login.open_modal_button"
             >
+              <Zap className="h-3.5 w-3.5 mr-1.5" />
               Online Banking
             </Button>
           </div>
@@ -167,27 +231,61 @@ export default function Navbar() {
       </div>
 
       {menuOpen && (
-        <div className="md:hidden bg-bank-navy border-t border-white/10 px-4 py-4 flex flex-col gap-3">
+        <div
+          className="md:hidden px-4 py-4 flex flex-col gap-3 border-t"
+          style={{
+            background: "oklch(0.16 0.08 265 / 0.96)",
+            borderColor: "oklch(1 0 0 / 0.08)",
+          }}
+        >
           {navLinks.map((l) => (
             <Link
               key={l.to}
               to={l.to}
-              className="text-white/80 hover:text-bank-gold py-1 text-sm font-medium"
+              className="text-white/75 hover:text-white py-1 text-sm font-medium"
               onClick={() => setMenuOpen(false)}
               data-ocid={`nav.mobile.${l.label.toLowerCase()}.link`}
             >
               {l.label}
             </Link>
           ))}
+          {isLoggedIn && (
+            <>
+              <Link
+                to="/profile"
+                className="flex items-center gap-1.5 text-white/75 hover:text-white py-1 text-sm font-medium"
+                onClick={() => setMenuOpen(false)}
+                data-ocid="nav.mobile.profile.link"
+              >
+                <User className="h-4 w-4" />
+                My Profile
+              </Link>
+              <Link
+                to="/admin"
+                className="flex items-center gap-1.5 text-white/75 hover:text-white py-1 text-sm font-medium"
+                onClick={() => setMenuOpen(false)}
+                data-ocid="nav.mobile.admin.link"
+              >
+                <ShieldCheck className="h-4 w-4" />
+                Admin
+              </Link>
+            </>
+          )}
           <Button
             size="sm"
-            className="bg-bank-gold text-bank-navy hover:bg-bank-gold/90 font-semibold w-full mt-2"
+            className="font-semibold w-full mt-2 rounded-lg"
+            style={{
+              background:
+                "linear-gradient(135deg, oklch(0.72 0.18 210), oklch(0.60 0.20 220))",
+              color: "white",
+            }}
             onClick={() => {
               setMenuOpen(false);
               handleBankingClick();
             }}
             data-ocid="nav.mobile.login.open_modal_button"
           >
+            <Zap className="h-3.5 w-3.5 mr-1.5" />
             Online Banking
           </Button>
         </div>

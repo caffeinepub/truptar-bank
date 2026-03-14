@@ -2,15 +2,21 @@ import { Outlet, createRootRoute, createRoute } from "@tanstack/react-router";
 import Footer from "./components/Footer";
 import Navbar from "./components/Navbar";
 import AboutPage from "./pages/AboutPage";
+import AdminPage from "./pages/AdminPage";
+import BusinessBankingPage from "./pages/BusinessBankingPage";
 import CommunityPage from "./pages/CommunityPage";
 import ContactPage from "./pages/ContactPage";
 import DashboardPage from "./pages/DashboardPage";
+import DigitalBankingPage from "./pages/DigitalBankingPage";
 import FAQPage from "./pages/FAQPage";
 import HomePage from "./pages/HomePage";
 import LoanApplicationPage from "./pages/LoanApplicationPage";
+import LoanServicesPage from "./pages/LoanServicesPage";
 import LoginPage from "./pages/LoginPage";
 import OpenAccountPage from "./pages/OpenAccountPage";
+import PersonalBankingPage from "./pages/PersonalBankingPage";
 import PrivacyPage from "./pages/PrivacyPage";
+import ProfilePage from "./pages/ProfilePage";
 import SecurityPage from "./pages/SecurityPage";
 import ServicesPage from "./pages/ServicesPage";
 import TermsPage from "./pages/TermsPage";
@@ -41,6 +47,26 @@ const servicesRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/services",
   component: ServicesPage,
+});
+const personalBankingRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/services/personal",
+  component: PersonalBankingPage,
+});
+const businessBankingRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/services/business",
+  component: BusinessBankingPage,
+});
+const loanServicesRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/services/loans",
+  component: LoanServicesPage,
+});
+const digitalBankingRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/services/digital",
+  component: DigitalBankingPage,
 });
 const communityRoute = createRoute({
   getParentRoute: () => rootRoute,
@@ -92,11 +118,25 @@ const dashboardRoute = createRoute({
   path: "/dashboard",
   component: DashboardPage,
 });
+const profileRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/profile",
+  component: ProfilePage,
+});
+const adminRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/admin",
+  component: AdminPage,
+});
 
 export const routeTree = rootRoute.addChildren([
   indexRoute,
   aboutRoute,
   servicesRoute,
+  personalBankingRoute,
+  businessBankingRoute,
+  loanServicesRoute,
+  digitalBankingRoute,
   communityRoute,
   contactRoute,
   openAccountRoute,
@@ -107,4 +147,6 @@ export const routeTree = rootRoute.addChildren([
   termsRoute,
   loginRoute,
   dashboardRoute,
+  profileRoute,
+  adminRoute,
 ]);

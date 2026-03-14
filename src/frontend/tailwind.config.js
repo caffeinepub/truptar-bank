@@ -68,9 +68,12 @@ export default {
         },
         "bank-navy": "oklch(var(--bank-navy))",
         "bank-gold": "oklch(var(--bank-gold))",
+        "bank-cyan": "oklch(var(--accent))",
+        "bank-emerald": "oklch(0.62 0.16 160)",
+        "bank-rose": "oklch(0.65 0.18 20)",
       },
       fontFamily: {
-        display: ["Playfair Display", "Georgia", "serif"],
+        display: ["Bricolage Grotesque", "Georgia", "serif"],
         sans: ["Plus Jakarta Sans", "system-ui", "sans-serif"],
       },
       borderRadius: {
@@ -80,6 +83,8 @@ export default {
       },
       boxShadow: {
         xs: "0 1px 2px 0 rgba(0,0,0,0.05)",
+        glow: "0 0 40px -10px oklch(0.72 0.18 210 / 0.4)",
+        "glow-gold": "0 0 40px -10px oklch(0.78 0.14 75 / 0.4)",
       },
       keyframes: {
         "accordion-down": {
@@ -90,10 +95,15 @@ export default {
           from: { height: "var(--radix-accordion-content-height)" },
           to: { height: "0" },
         },
+        float: {
+          "0%, 100%": { transform: "translateY(0px)" },
+          "50%": { transform: "translateY(-12px)" },
+        },
       },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
         "accordion-up": "accordion-up 0.2s ease-out",
+        float: "float 6s ease-in-out infinite",
       },
     },
   },
