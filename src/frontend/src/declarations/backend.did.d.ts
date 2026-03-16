@@ -75,7 +75,43 @@ export interface Transaction {
   'isDeposit' : boolean,
   'amount' : number,
 }
-export interface UserProfile { 'name' : string }
+export interface UserProfile {
+  'contactInfo' : {
+    'email' : string,
+    'countryCode' : string,
+    'phone' : string,
+  },
+  'emailVerified' : boolean,
+  'username' : string,
+  'totpSecret' : string,
+  'preferences' : {
+    'notifPromo' : boolean,
+    'notifTransactions' : boolean,
+    'language' : string,
+    'notifSecurity' : boolean,
+  },
+  'emailTwoFAEnabled' : boolean,
+  'twoFAEnabled' : boolean,
+  'twoFAMethod' : string,
+  'personalInfo' : {
+    'dob' : string,
+    'country' : string,
+    'city' : string,
+    'postalCode' : string,
+    'fullName' : string,
+    'address' : string,
+    'gender' : string,
+    'lastName' : string,
+    'firstName' : string,
+  },
+  'kycData' : {
+    'dob' : string,
+    'country' : string,
+    'kycStatus' : string,
+    'idNumber' : string,
+    'idType' : string,
+  },
+}
 export type UserRole = { 'admin' : null } |
   { 'user' : null } |
   { 'guest' : null };

@@ -1,32 +1,57 @@
-# TRUPTAR Bank – Profile Page Cleanup & Security Enhancement
+# TRUPTAR Bank
 
 ## Current State
-The Profile page (`/profile`) has 9 sections with hardcoded example data pre-filled (e.g. "John Doe", "johndoe88", example account numbers, sample activity logs, mock documents). Email Verification section simulates a code send but does not actually email a code. The Authenticator App 2FA section shows a static setup without generating a real TOTP secret key.
+- DashboardPage has an "Admin Approval Required" info banner on the checking account tab
+- AdminPage fails to load Registered Users and Transaction Requests because both components call `useState(() => {...})` instead of `useEffect(() => {...}, [actor])` - a critical bug
+- AdminPage dashboard overview (KPI stats: Total Users, Pending Requests, Active Accounts, Transactions Today, Recent Activity) uses 100% hardcoded mock data
+- AdminPage Site Visitors section shows fake visitor logs, top pages, and bar chart with made-up numbers
+- AdminPage User Management, Loans, KYC, Contacts, Account Opening, Transaction Monitor all use large hardcoded mock arrays
+- ProfilePage fails to open (likely a crash or navigation issue)
+- OpenAccountPage just submits a passive "application" that goes nowhere; it does not create a real banking account or assign the user role
 
 ## Requested Changes (Diff)
 
 ### Add
-- TOTP secret key generation for Authenticator App 2FA: generate a Base32 secret, display as QR code (otpauth URI) and manual entry key, with a 6-digit code confirm step
-- Email verification flow: simulate sending a code to the entered email address with a realistic UX (spinner → "Code sent to your@email.com" confirmation → 6-digit input → verify)
-- "Code sent" confirmation message showing which email the code was sent to
+- AdminPage: Load dashboard KPI stats (Total Users, Pending Requests, Active Accounts) by calling `adminGetAllUsers()` and `adminGetPendingRequests()` from the backend on mount; compute counts from real data
+- AdminPage: Recent Activity section should be derived from real pending requests (show most recent 10 pending/approved/rejected requests)
+- AdminPage: User Management section should use real `adminGetAllUsers()` data instead of mockUsers
+- AdminPage: Loans section should use real `getLoanApplications()` backend data
+- AdminPage: Contacts section should use real `getContactForms()` backend data
+- AdminPage: Account Opening Requests should use real `getAccountApplications()` backend data
+- AdminPage: KYC section should derive KYC submissions from `adminGetAllUsers()` profiles (show users whose kycData.kycStatus is not empty)
+- AdminPage: Transaction Monitor should use real `adminGetPendingRequests()` data
+- OpenAccountPage: After form submission, automatically:
+  1. Call `actor.assignCallerUserRole(principal, UserRole.user)` to register user
+  2. Call `actor.saveCallerUserProfile(...)` with all submitted details populated into the profile schema
+  3. Call `actor.getAccountInfo()` to retrieve their unique account number
+  4. Show success state with their new account number
+  5. Provide link to go to Dashboard or Profile to complete verification
 
 ### Modify
-- Profile Overview: remove all pre-filled example values (name, username, account number, country, etc.) — show empty/placeholder state
-- Personal Information: clear all pre-filled form values (First Name, Last Name, DOB, Gender, Country, City, Address, Postal Code)
-- Username Settings: clear pre-filled username
-- Contact Information: clear pre-filled email and phone
-- Email Verification: improve flow to show code-sent confirmation with email address, 6-digit entry, and verify button
-- KYC section: clear pre-filled values
-- Security Settings – Authenticator App 2FA: generate a TOTP secret key (Base32), display a scannable QR code URI and copyable manual key, require user to enter a 6-digit code to confirm activation
-- Activity Logs: remove hardcoded mock rows — show empty state by default
-- Documents: already shows empty state — keep as is
+- DashboardPage: Remove the "Admin Approval Required" amber warning banner block from the checking account tab (keep all other content)
+- AdminPage: Fix `useState(() => {...})` -> `useEffect(() => {...}, [actor])` bug in BOTH RegisteredUsers and TransactionRequests components so they actually load on mount
+- AdminPage: Dashboard overview: Remove all hardcoded mock KPI numbers; replace with real computed values from backend data (loading states while fetching)
+- AdminPage: Remove `recentActivity` mock array; replace Recent Activity feed with real data from pending requests (show type, amount, date, status)
+- AdminPage: Site Visitors section: Remove ALL fake visitor log rows, fake top pages data, fake bar chart data. Show an empty state / zeroed stats. Add a note: "Visitor tracking is not yet configured. No data has been collected."
+- AdminPage: Remove ALL other mock data arrays (mockUsers, mockLoans, mockKYC, mockContacts, mockAccountRequests, mockTransactions, visitorLog, topPages, dailyVisits) and replace the relevant sections with real backend calls
+- ProfilePage: Fix whatever is causing it not to open - check for runtime crashes, fix null checks on actor/profile, ensure all hooks and state initialization are safe with default values
 
 ### Remove
-- All hardcoded example personal data (names, usernames, account numbers, phone numbers, addresses, sample log rows)
+- AdminPage: All mock/hardcoded data constants at the top of the file (mockUsers, mockLoans, mockKYC, mockContacts, mockAccountRequests, recentActivity, visitorLog, topPages, dailyVisits, etc.)
+- DashboardPage: The approval notice `<div>` block with the amber AlertTriangle warning
 
 ## Implementation Plan
-1. Strip all default/initial state values that contain example data in ProfilePage.tsx
-2. Replace activity log mock data array with an empty array
-3. Update Email Verification section: after clicking "Send Verification Code", show spinner then display "Code sent to [email]" message with 6-digit input
-4. Update Authenticator App 2FA: on enable click, generate a random Base32 secret, display QR code image URL (using a QR API) and the raw secret for manual entry, add confirm-code input, activate only after correct code entry (accept any 6-digit input for demo)
-5. Validate and deploy
+1. DashboardPage.tsx: Remove the 9-line amber approval notice block
+2. AdminPage.tsx:
+   a. Fix both `useState` -> `useEffect` bugs in RegisteredUsers and TransactionRequests
+   b. Add a new `AdminDashboard` data loader that calls `adminGetAllUsers()` and `adminGetPendingRequests()` on mount; compute KPI stats from real data; show loading skeleton while fetching
+   c. Replace Recent Activity with a real feed from pending requests data
+   d. Replace User Management with real `adminGetAllUsers()` data - show principal (truncated), account number, balance, name from profile
+   e. Replace Loans section with real `getLoanApplications()` data
+   f. Replace Contacts section with real `getContactForms()` data
+   g. Replace Account Opening section with real `getAccountApplications()` data
+   h. Replace KYC section with users from `adminGetAllUsers()` that have KYC data
+   i. Replace Transaction Monitor with `adminGetPendingRequests()` data (all statuses)
+   j. Site Visitors: Clear all mock data, show zero-state with note
+3. ProfilePage.tsx: Fix crash - ensure safe initialization of all state from profile store defaults, add error boundaries/null checks, fix any broken import or hook dependency
+4. OpenAccountPage.tsx: Rewrite submit handler to: assign user role, save profile with form data, fetch account number, show success with account number and links to dashboard/profile

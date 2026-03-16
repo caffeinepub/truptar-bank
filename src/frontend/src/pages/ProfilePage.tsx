@@ -24,6 +24,8 @@ import {
 } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
+import { useActor } from "@/hooks/useActor";
+import { useProfileStore } from "@/hooks/useProfileStore";
 import {
   AlertCircle,
   CheckCircle2,
@@ -46,7 +48,7 @@ import {
   User,
   UserCheck,
 } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
 
 // ---- Static Data ----
@@ -88,22 +90,52 @@ function generateTotpSecret(): string {
 export default function ProfilePage() {
   const [activeTab, setActiveTab] = useState("overview");
 
-  // Personal Info — all empty by default
+  // Persistent profile store
+  const { profile, updateProfile, syncStatus, loadFromBackend } =
+    useProfileStore();
+  const { actor } = useActor();
+  const [accountNumber, setAccountNumber] = useState<string | null>(null);
+  const saveProfile = (partial: Parameters<typeof updateProfile>[0]) =>
+    updateProfile(partial, (actor as any) ?? undefined);
+
+  // Load profile from backend on mount once actor is ready
+  useEffect(() => {
+    if (actor) {
+      loadFromBackend(actor as any);
+    }
+  }, [actor, loadFromBackend]);
+
+  // Load account number
+  useEffect(() => {
+    if (!actor) return;
+    try {
+      (actor as any)
+        .getAccountInfo()
+        .then((info: { accountNumber: string; balance: number } | null) => {
+          if (info?.accountNumber) setAccountNumber(info.accountNumber);
+        })
+        .catch(() => {});
+    } catch {
+      // ignore
+    }
+  }, [actor]);
+
+  // Personal Info — initialized from store
   const [personal, setPersonal] = useState({
-    fullName: "",
-    firstName: "",
-    lastName: "",
-    dob: "",
-    gender: "",
-    country: "",
-    city: "",
-    address: "",
-    postal: "",
+    fullName: profile.personalInfo.fullName,
+    firstName: profile.personalInfo.firstName,
+    lastName: profile.personalInfo.lastName,
+    dob: profile.personalInfo.dob,
+    gender: profile.personalInfo.gender,
+    country: profile.personalInfo.country,
+    city: profile.personalInfo.city,
+    address: profile.personalInfo.address,
+    postal: profile.personalInfo.postalCode,
     personalSaved: false,
   });
 
-  // Username — empty by default
-  const [username, setUsername] = useState("");
+  // Username — initialized from store
+  const [username, setUsername] = useState(profile.username);
   const [newUsername, setNewUsername] = useState("");
   const [usernameAvailable, setUsernameAvailable] = useState<null | boolean>(
     null,
@@ -111,54 +143,74 @@ export default function ProfilePage() {
   const [usernameChecking, setUsernameChecking] = useState(false);
   const [usernameSaved, setUsernameSaved] = useState(false);
 
-  // Contact — empty by default
-  const [contactEmail, setContactEmail] = useState("");
-  const [countryCode, setCountryCode] = useState("+234");
-  const [localPhone, setLocalPhone] = useState("");
+  // Contact — initialized from store
+  const [contactEmail, setContactEmail] = useState(profile.contactInfo.email);
+  const [countryCode, setCountryCode] = useState(
+    profile.contactInfo.countryCode || "+234",
+  );
+  const [localPhone, setLocalPhone] = useState(profile.contactInfo.phone);
 
-  // Email verification state
-  const [emailVerified, setEmailVerified] = useState(false);
+  // Email verification state — initialized from store
+  const [emailVerified, setEmailVerified] = useState(profile.emailVerified);
   const [verifyStep, setVerifyStep] = useState<
     "idle" | "loading" | "sent" | "verified"
-  >("idle");
+  >(profile.emailVerified ? "verified" : "idle");
   const [verifyCodeInput, setVerifyCodeInput] = useState("");
   const [generatedCode, setGeneratedCode] = useState("");
   const [verifyError, setVerifyError] = useState("");
 
-  // KYC state
+  // KYC state — initialized from store
   const [kycStatus, setKycStatus] = useState<
     "form" | "pending" | "approved" | "rejected"
-  >("form");
-  const [kycCountry, setKycCountry] = useState("");
-  const [kycDob, setKycDob] = useState("");
-  const [kycGovId, setKycGovId] = useState("");
-  const [kycIdType, setKycIdType] = useState("Passport");
+  >(
+    (profile.kycData.kycStatus as
+      | "form"
+      | "pending"
+      | "approved"
+      | "rejected") || "form",
+  );
+  const [kycCountry, setKycCountry] = useState(profile.kycData.country);
+  const [kycDob, setKycDob] = useState(profile.kycData.dob);
+  const [kycGovId, setKycGovId] = useState(profile.kycData.idNumber);
+  const [kycIdType, setKycIdType] = useState(
+    profile.kycData.idType || "Passport",
+  );
   const [kycIdFile, setKycIdFile] = useState<File | null>(null);
   const [kycSelfie, setKycSelfie] = useState<File | null>(null);
 
-  // Security
+  // Security — initialized from store
   const [showCurrentPw, setShowCurrentPw] = useState(false);
   const [showNewPw, setShowNewPw] = useState(false);
   const [showConfirmPw, setShowConfirmPw] = useState(false);
-  const [_twoFaEnabled, setTwoFaEnabled] = useState(false);
-  const [twoFaMethod, setTwoFaMethod] = useState<"email" | "app">("email");
-  const [emailTwoFaEnabled, setEmailTwoFaEnabled] = useState(false);
+  const [_twoFaEnabled, setTwoFaEnabled] = useState(profile.twoFAEnabled);
+  const [twoFaMethod, setTwoFaMethod] = useState<"email" | "app">(
+    (profile.twoFAMethod as "email" | "app") || "email",
+  );
+  const [emailTwoFaEnabled, setEmailTwoFaEnabled] = useState(
+    profile.emailTwoFAEnabled,
+  );
 
-  // TOTP / Authenticator App state
+  // TOTP / Authenticator App state — initialized from store
   const [totpSetupStep, setTotpSetupStep] = useState<
     "idle" | "setup" | "enabled"
-  >("idle");
-  const [totpSecret, setTotpSecret] = useState("");
+  >(profile.totpSetupStep || "idle");
+  const [totpSecret, setTotpSecret] = useState(profile.totpSecret || "");
   const [totpCodeInput, setTotpCodeInput] = useState("");
   const [totpCodeError, setTotpCodeError] = useState("");
 
   const [sessions, setSessions] = useState(SESSIONS);
 
-  // Preferences
-  const [notifTransactions, setNotifTransactions] = useState(false);
-  const [notifSecurity, setNotifSecurity] = useState(false);
-  const [notifPromo, setNotifPromo] = useState(false);
-  const [prefLanguage, setPrefLanguage] = useState("English");
+  // Preferences — initialized from store
+  const [notifTransactions, setNotifTransactions] = useState(
+    profile.preferences.notifTransactions,
+  );
+  const [notifSecurity, setNotifSecurity] = useState(
+    profile.preferences.notifSecurity,
+  );
+  const [notifPromo, setNotifPromo] = useState(profile.preferences.notifPromo);
+  const [prefLanguage, setPrefLanguage] = useState(
+    profile.preferences.language || "English",
+  );
 
   // Activity Logs — empty by default (will be populated after user actions)
   const [activityLogs] = useState<
@@ -221,6 +273,7 @@ export default function ProfilePage() {
       setEmailVerified(true);
       setVerifyStep("verified");
       setVerifyError("");
+      saveProfile({ emailVerified: true });
       toast.success("Email verified successfully!");
     } else {
       setVerifyError("Invalid code. Please try again.");
@@ -253,6 +306,12 @@ export default function ProfilePage() {
     setTotpSetupStep("enabled");
     setTwoFaEnabled(true);
     setTotpCodeError("");
+    saveProfile({
+      totpSetupStep: "enabled",
+      totpSecret: totpSecret,
+      twoFAEnabled: true,
+      twoFAMethod: "app",
+    });
     toast.success("Authenticator 2FA activated successfully!");
   }
 
@@ -261,6 +320,11 @@ export default function ProfilePage() {
     setTotpSecret("");
     setTotpCodeInput("");
     setTwoFaEnabled(false);
+    saveProfile({
+      totpSetupStep: "idle",
+      totpSecret: "",
+      twoFAEnabled: false,
+    });
     toast.success("Authenticator 2FA has been disabled.");
   }
 
@@ -289,6 +353,32 @@ export default function ProfilePage() {
           <p className="text-white/60 text-sm">
             Manage your identity, preferences, and security settings
           </p>
+          <div className="mt-2 h-5">
+            {syncStatus === "loading" && (
+              <span className="inline-flex items-center gap-1.5 text-xs text-white/50">
+                <Loader2 className="w-3 h-3 animate-spin" />
+                Loading your profile…
+              </span>
+            )}
+            {syncStatus === "saving" && (
+              <span className="inline-flex items-center gap-1.5 text-xs text-white/50">
+                <Loader2 className="w-3 h-3 animate-spin" />
+                Saving to server…
+              </span>
+            )}
+            {syncStatus === "synced" && (
+              <span className="inline-flex items-center gap-1.5 text-xs text-emerald-400">
+                <CheckCircle2 className="w-3 h-3" />
+                Profile synced
+              </span>
+            )}
+            {syncStatus === "error" && (
+              <span className="inline-flex items-center gap-1.5 text-xs text-red-400">
+                <AlertCircle className="w-3 h-3" />
+                Sync failed — changes saved locally
+              </span>
+            )}
+          </div>
         </div>
       </div>
 
@@ -371,7 +461,11 @@ export default function ProfilePage() {
                           label: "Username",
                           value: username ? `@${username}` : "—",
                         },
-                        { label: "Account Number", value: "—", mono: true },
+                        {
+                          label: "Account Number",
+                          value: accountNumber ?? "Generating...",
+                          mono: true,
+                        },
                         { label: "Account Type", value: "Personal" },
                         { label: "Country", value: personal.country || "—" },
                       ].map((item) => (
@@ -745,6 +839,19 @@ export default function ProfilePage() {
                     className="bg-bank-navy text-white hover:bg-bank-navy/90"
                     onClick={() => {
                       setPersonal((p) => ({ ...p, personalSaved: true }));
+                      saveProfile({
+                        personalInfo: {
+                          firstName: personal.firstName,
+                          lastName: personal.lastName,
+                          fullName: personal.fullName,
+                          dob: personal.dob,
+                          gender: personal.gender,
+                          country: personal.country,
+                          city: personal.city,
+                          address: personal.address,
+                          postalCode: personal.postal,
+                        },
+                      });
                       toast.success("Personal information saved successfully");
                     }}
                     data-ocid="personal_info.save.submit_button"
@@ -956,9 +1063,16 @@ export default function ProfilePage() {
 
                   <Button
                     className="bg-bank-navy text-white hover:bg-bank-navy/90"
-                    onClick={() =>
-                      toast.success("Contact information updated successfully")
-                    }
+                    onClick={() => {
+                      saveProfile({
+                        contactInfo: {
+                          email: contactEmail,
+                          phone: localPhone,
+                          countryCode: countryCode,
+                        },
+                      });
+                      toast.success("Contact information updated successfully");
+                    }}
                     data-ocid="profile.contact.save_button"
                   >
                     Update Contact Info
@@ -1125,6 +1239,7 @@ export default function ProfilePage() {
                     disabled={usernameAvailable !== true}
                     onClick={() => {
                       setUsername(newUsername);
+                      saveProfile({ username: newUsername });
                       setNewUsername("");
                       setUsernameAvailable(null);
                       setUsernameSaved(true);
@@ -1378,6 +1493,15 @@ export default function ProfilePage() {
                             return;
                           }
                           setKycStatus("pending");
+                          saveProfile({
+                            kycData: {
+                              country: kycCountry,
+                              dob: kycDob,
+                              idNumber: kycGovId,
+                              idType: kycIdType,
+                              kycStatus: "pending",
+                            },
+                          });
                           toast.success(
                             "Verification submitted. Under review.",
                           );
@@ -1584,6 +1708,11 @@ export default function ProfilePage() {
                               checked={emailTwoFaEnabled}
                               onCheckedChange={(checked) => {
                                 setEmailTwoFaEnabled(checked);
+                                saveProfile({
+                                  emailTwoFAEnabled: checked,
+                                  twoFAEnabled: checked,
+                                  twoFAMethod: "email",
+                                });
                                 toast.success(
                                   checked
                                     ? "Email 2FA enabled"
@@ -2006,9 +2135,17 @@ export default function ProfilePage() {
 
                   <Button
                     className="bg-bank-navy text-white hover:bg-bank-navy/90"
-                    onClick={() =>
-                      toast.success("Preferences saved successfully")
-                    }
+                    onClick={() => {
+                      saveProfile({
+                        preferences: {
+                          notifTransactions,
+                          notifSecurity,
+                          notifPromo,
+                          language: prefLanguage,
+                        },
+                      });
+                      toast.success("Preferences saved successfully");
+                    }}
                     data-ocid="preferences.save.submit_button"
                   >
                     Save Preferences

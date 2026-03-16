@@ -62,6 +62,7 @@ import {
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import type { Transaction } from "../backend";
+import type { PendingRequest } from "../backend.d";
 import { useActor } from "../hooks/useActor";
 import { useInternetIdentity } from "../hooks/useInternetIdentity";
 
@@ -1270,9 +1271,13 @@ export default function DashboardPage() {
   const isLoggedIn = !!identity && !identity.getPrincipal().isAnonymous();
 
   // Checking account state
+  const [accountNumber, setAccountNumber] = useState<string | null>(null);
   const [balance, setBalance] = useState<number | null>(null);
   const [_transactions, setTransactions] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(true);
+  const [pendingRequests, setPendingRequests] = useState<PendingRequest[]>([]);
+  const [depositDesc, setDepositDesc] = useState("");
+  const [withdrawDesc, setWithdrawDesc] = useState("");
 
   // Dialog state
   const [depositOpen, setDepositOpen] = useState(false);
@@ -1356,12 +1361,16 @@ export default function DashboardPage() {
     if (!actor) return;
     setLoading(true);
     try {
-      const [bal, txns] = await Promise.all([
-        actor.getBalance(),
+      const ext = actor as any;
+      const [acctInfo, txns, pending] = await Promise.all([
+        ext.getAccountInfo(),
         actor.getTransactions(),
+        ext.getPendingRequests(),
       ]);
-      setBalance(bal);
+      setAccountNumber(acctInfo.accountNumber);
+      setBalance(acctInfo.balance);
       setTransactions(txns);
+      setPendingRequests(pending);
     } catch {
       toast.error("Failed to load account data.");
     } finally {
@@ -1431,16 +1440,22 @@ export default function DashboardPage() {
       const date = new Date().toLocaleDateString("en-US", {
         month: "short",
         day: "numeric",
+        year: "numeric",
       });
-      await actor.deposit(Number.parseFloat(amount), "Deposit", date);
+      await (actor as any).requestDeposit(
+        Number.parseFloat(amount),
+        depositDesc || "Deposit request",
+        date,
+      );
       await loadData();
       setDepositOpen(false);
       setAmount("");
+      setDepositDesc("");
       toast.success(
-        `Deposited $${Number.parseFloat(amount).toFixed(2)} successfully.`,
+        `Deposit request of $${Number.parseFloat(amount).toFixed(2)} submitted. Awaiting admin approval.`,
       );
     } catch {
-      toast.error("Deposit failed. Please try again.");
+      toast.error("Deposit request failed. Please try again.");
     } finally {
       setProcessing(false);
     }
@@ -1453,16 +1468,22 @@ export default function DashboardPage() {
       const date = new Date().toLocaleDateString("en-US", {
         month: "short",
         day: "numeric",
+        year: "numeric",
       });
-      await actor.withdraw(Number.parseFloat(amount), "Withdrawal", date);
+      await (actor as any).requestWithdrawal(
+        Number.parseFloat(amount),
+        withdrawDesc || "Withdrawal request",
+        date,
+      );
       await loadData();
       setWithdrawOpen(false);
       setAmount("");
+      setWithdrawDesc("");
       toast.success(
-        `Withdrew $${Number.parseFloat(amount).toFixed(2)} successfully.`,
+        `Withdrawal request of $${Number.parseFloat(amount).toFixed(2)} submitted. Awaiting admin approval.`,
       );
     } catch {
-      toast.error("Insufficient funds or withdrawal failed.");
+      toast.error("Withdrawal request failed. Please try again.");
     } finally {
       setProcessing(false);
     }
@@ -1885,7 +1906,8 @@ export default function DashboardPage() {
                           Active
                         </Badge>
                         <p className="text-white/40 text-xs mt-1">
-                          Acct: •••• 4721
+                          Acct:{" "}
+                          {accountNumber ? accountNumber : "Generating..."}
                         </p>
                       </div>
                     </div>
@@ -1903,7 +1925,7 @@ export default function DashboardPage() {
                     className="bg-emerald-600 hover:bg-emerald-700 text-white font-semibold h-11"
                     data-ocid="dashboard.deposit.button"
                   >
-                    <TrendingUp className="h-4 w-4 mr-2" /> Deposit
+                    <TrendingUp className="h-4 w-4 mr-2" /> Request Deposit
                   </Button>
                   <Button
                     size="lg"
@@ -1914,7 +1936,7 @@ export default function DashboardPage() {
                     className="bg-bank-navy hover:bg-bank-navy/90 text-white font-semibold h-11"
                     data-ocid="dashboard.withdraw.button"
                   >
-                    <TrendingDown className="h-4 w-4 mr-2" /> Withdraw
+                    <TrendingDown className="h-4 w-4 mr-2" /> Request Withdrawal
                   </Button>
                 </div>
 
@@ -2046,6 +2068,101 @@ export default function DashboardPage() {
                                   }`}
                                 >
                                   {t.status}
+                                </Badge>
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    )}
+                  </CardContent>
+                </Card>
+
+                <Card
+                  className="border-border"
+                  data-ocid="checking.pending_requests.card"
+                >
+                  <CardHeader className="pb-3">
+                    <CardTitle className="font-display text-base text-bank-navy flex items-center gap-2">
+                      <Timer className="h-4 w-4 text-bank-gold" /> My Pending
+                      Requests
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="p-0 overflow-x-auto">
+                    {pendingRequests.length === 0 ? (
+                      <div
+                        className="p-8 text-center text-muted-foreground text-sm"
+                        data-ocid="checking.pending_requests.empty_state"
+                      >
+                        No pending requests. Submit a deposit or withdrawal to
+                        get started.
+                      </div>
+                    ) : (
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead className="text-bank-navy font-semibold text-xs">
+                              Request ID
+                            </TableHead>
+                            <TableHead className="text-bank-navy font-semibold text-xs">
+                              Type
+                            </TableHead>
+                            <TableHead className="text-bank-navy font-semibold text-xs text-right">
+                              Amount
+                            </TableHead>
+                            <TableHead className="text-bank-navy font-semibold text-xs">
+                              Description
+                            </TableHead>
+                            <TableHead className="text-bank-navy font-semibold text-xs">
+                              Date
+                            </TableHead>
+                            <TableHead className="text-bank-navy font-semibold text-xs">
+                              Status
+                            </TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {pendingRequests.map((req, i) => (
+                            <TableRow
+                              key={req.requestId}
+                              data-ocid={`checking.pending.row.${i + 1}`}
+                            >
+                              <TableCell className="font-mono text-xs text-muted-foreground">
+                                {req.requestId.slice(0, 12)}...
+                              </TableCell>
+                              <TableCell>
+                                <Badge
+                                  className={`text-xs ${req.requestType.__kind__ === "deposit" ? "bg-emerald-100 text-emerald-700 border-emerald-200" : "bg-blue-100 text-blue-700 border-blue-200"}`}
+                                >
+                                  {req.requestType.__kind__ === "deposit"
+                                    ? "Deposit"
+                                    : "Withdrawal"}
+                                </Badge>
+                              </TableCell>
+                              <TableCell className="text-xs text-right font-semibold">
+                                ${formatCurrency(req.amount)}
+                              </TableCell>
+                              <TableCell className="text-xs text-muted-foreground max-w-[120px] truncate">
+                                {req.description}
+                              </TableCell>
+                              <TableCell className="text-xs text-muted-foreground">
+                                {req.date}
+                              </TableCell>
+                              <TableCell>
+                                <Badge
+                                  className={`text-xs ${
+                                    req.status.__kind__ === "pending"
+                                      ? "bg-amber-100 text-amber-700 border-amber-200"
+                                      : req.status.__kind__ === "approved"
+                                        ? "bg-emerald-100 text-emerald-700 border-emerald-200"
+                                        : "bg-red-100 text-red-700 border-red-200"
+                                  }`}
+                                >
+                                  {req.status.__kind__ === "pending"
+                                    ? "Pending"
+                                    : req.status.__kind__ === "approved"
+                                      ? "Approved"
+                                      : "Rejected"}
                                 </Badge>
                               </TableCell>
                             </TableRow>
@@ -2847,21 +2964,37 @@ export default function DashboardPage() {
         <DialogContent data-ocid="dashboard.deposit.dialog">
           <DialogHeader>
             <DialogTitle className="font-display text-bank-navy">
-              Deposit to Checking
+              Request Deposit
             </DialogTitle>
           </DialogHeader>
           <div className="space-y-4 py-2">
-            <Label htmlFor="deposit-amount">Amount ($)</Label>
-            <Input
-              id="deposit-amount"
-              type="number"
-              min="0.01"
-              step="0.01"
-              value={amount}
-              onChange={(e) => setAmount(e.target.value)}
-              placeholder="Enter amount"
-              data-ocid="dashboard.deposit.input"
-            />
+            <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
+              ⏳ This deposit will be reviewed and confirmed by an admin before
+              it is credited to your account.
+            </p>
+            <div className="space-y-2">
+              <Label htmlFor="deposit-amount">Amount ($)</Label>
+              <Input
+                id="deposit-amount"
+                type="number"
+                min="0.01"
+                step="0.01"
+                value={amount}
+                onChange={(e) => setAmount(e.target.value)}
+                placeholder="Enter amount"
+                data-ocid="dashboard.deposit.input"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="deposit-desc">Description (optional)</Label>
+              <Input
+                id="deposit-desc"
+                value={depositDesc}
+                onChange={(e) => setDepositDesc(e.target.value)}
+                placeholder="e.g. Salary, Transfer from..."
+                data-ocid="dashboard.deposit.textarea"
+              />
+            </div>
           </div>
           <DialogFooter>
             <Button
@@ -2877,7 +3010,7 @@ export default function DashboardPage() {
               className="bg-emerald-600 hover:bg-emerald-700 text-white"
               data-ocid="dashboard.deposit.confirm.button"
             >
-              {processing ? "Processing..." : "Deposit"}
+              {processing ? "Processing..." : "Submit Request"}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -2888,21 +3021,37 @@ export default function DashboardPage() {
         <DialogContent data-ocid="dashboard.withdraw.dialog">
           <DialogHeader>
             <DialogTitle className="font-display text-bank-navy">
-              Withdraw from Checking
+              Request Withdrawal
             </DialogTitle>
           </DialogHeader>
           <div className="space-y-4 py-2">
-            <Label htmlFor="withdraw-amount">Amount ($)</Label>
-            <Input
-              id="withdraw-amount"
-              type="number"
-              min="0.01"
-              step="0.01"
-              value={amount}
-              onChange={(e) => setAmount(e.target.value)}
-              placeholder="Enter amount"
-              data-ocid="dashboard.withdraw.input"
-            />
+            <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
+              ⏳ This withdrawal will be reviewed and confirmed by an admin
+              before it is deducted from your account.
+            </p>
+            <div className="space-y-2">
+              <Label htmlFor="withdraw-amount">Amount ($)</Label>
+              <Input
+                id="withdraw-amount"
+                type="number"
+                min="0.01"
+                step="0.01"
+                value={amount}
+                onChange={(e) => setAmount(e.target.value)}
+                placeholder="Enter amount"
+                data-ocid="dashboard.withdraw.input"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="withdraw-desc">Description (optional)</Label>
+              <Input
+                id="withdraw-desc"
+                value={withdrawDesc}
+                onChange={(e) => setWithdrawDesc(e.target.value)}
+                placeholder="e.g. Rent, Groceries..."
+                data-ocid="dashboard.withdraw.textarea"
+              />
+            </div>
           </div>
           <DialogFooter>
             <Button
@@ -2918,7 +3067,7 @@ export default function DashboardPage() {
               className="bg-bank-navy text-white hover:bg-bank-navy/90"
               data-ocid="dashboard.withdraw.confirm.button"
             >
-              {processing ? "Processing..." : "Withdraw"}
+              {processing ? "Processing..." : "Submit Request"}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -3301,7 +3450,7 @@ export default function DashboardPage() {
               className="bg-emerald-600 hover:bg-emerald-700 text-white"
               data-ocid="savings.deposit.confirm.button"
             >
-              {processing ? "Processing..." : "Deposit"}
+              {processing ? "Processing..." : "Submit Request"}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -3342,7 +3491,7 @@ export default function DashboardPage() {
               className="bg-bank-navy text-white hover:bg-bank-navy/90"
               data-ocid="savings.withdraw.confirm.button"
             >
-              {processing ? "Processing..." : "Withdraw"}
+              {processing ? "Processing..." : "Submit Request"}
             </Button>
           </DialogFooter>
         </DialogContent>

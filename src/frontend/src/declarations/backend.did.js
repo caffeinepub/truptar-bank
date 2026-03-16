@@ -49,7 +49,43 @@ export const BusinessAccount = IDL.Record({
   'outgoingPayments' : IDL.Vec(BusinessPayment),
   'businessBalance' : IDL.Float64,
 });
-export const UserProfile = IDL.Record({ 'name' : IDL.Text });
+export const UserProfile = IDL.Record({
+  'contactInfo' : IDL.Record({
+    'email' : IDL.Text,
+    'countryCode' : IDL.Text,
+    'phone' : IDL.Text,
+  }),
+  'emailVerified' : IDL.Bool,
+  'username' : IDL.Text,
+  'totpSecret' : IDL.Text,
+  'preferences' : IDL.Record({
+    'notifPromo' : IDL.Bool,
+    'notifTransactions' : IDL.Bool,
+    'language' : IDL.Text,
+    'notifSecurity' : IDL.Bool,
+  }),
+  'emailTwoFAEnabled' : IDL.Bool,
+  'twoFAEnabled' : IDL.Bool,
+  'twoFAMethod' : IDL.Text,
+  'personalInfo' : IDL.Record({
+    'dob' : IDL.Text,
+    'country' : IDL.Text,
+    'city' : IDL.Text,
+    'postalCode' : IDL.Text,
+    'fullName' : IDL.Text,
+    'address' : IDL.Text,
+    'gender' : IDL.Text,
+    'lastName' : IDL.Text,
+    'firstName' : IDL.Text,
+  }),
+  'kycData' : IDL.Record({
+    'dob' : IDL.Text,
+    'country' : IDL.Text,
+    'kycStatus' : IDL.Text,
+    'idNumber' : IDL.Text,
+    'idType' : IDL.Text,
+  }),
+});
 export const ContactFormSubmission = IDL.Record({
   'name' : IDL.Text,
   'email' : IDL.Text,
@@ -208,7 +244,43 @@ export const idlFactory = ({ IDL }) => {
     'outgoingPayments' : IDL.Vec(BusinessPayment),
     'businessBalance' : IDL.Float64,
   });
-  const UserProfile = IDL.Record({ 'name' : IDL.Text });
+  const UserProfile = IDL.Record({
+    'contactInfo' : IDL.Record({
+      'email' : IDL.Text,
+      'countryCode' : IDL.Text,
+      'phone' : IDL.Text,
+    }),
+    'emailVerified' : IDL.Bool,
+    'username' : IDL.Text,
+    'totpSecret' : IDL.Text,
+    'preferences' : IDL.Record({
+      'notifPromo' : IDL.Bool,
+      'notifTransactions' : IDL.Bool,
+      'language' : IDL.Text,
+      'notifSecurity' : IDL.Bool,
+    }),
+    'emailTwoFAEnabled' : IDL.Bool,
+    'twoFAEnabled' : IDL.Bool,
+    'twoFAMethod' : IDL.Text,
+    'personalInfo' : IDL.Record({
+      'dob' : IDL.Text,
+      'country' : IDL.Text,
+      'city' : IDL.Text,
+      'postalCode' : IDL.Text,
+      'fullName' : IDL.Text,
+      'address' : IDL.Text,
+      'gender' : IDL.Text,
+      'lastName' : IDL.Text,
+      'firstName' : IDL.Text,
+    }),
+    'kycData' : IDL.Record({
+      'dob' : IDL.Text,
+      'country' : IDL.Text,
+      'kycStatus' : IDL.Text,
+      'idNumber' : IDL.Text,
+      'idType' : IDL.Text,
+    }),
+  });
   const ContactFormSubmission = IDL.Record({
     'name' : IDL.Text,
     'email' : IDL.Text,

@@ -44,11 +44,15 @@ import {
   X,
   XCircle,
 } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
+import type { AdminUserRecord, PendingRequest } from "../backend.d";
+import { useActor } from "../hooks/useActor";
 
 type Section =
   | "dashboard"
+  | "registered_users"
+  | "transaction_requests"
   | "users"
   | "loans"
   | "kyc"
@@ -59,818 +63,6 @@ type Section =
   | "settings";
 
 // ─── Mock Data ───────────────────────────────────────────────────────────────
-
-const mockUsers = [
-  {
-    id: 1,
-    name: "James Okonkwo",
-    account: "5429081142",
-    type: "Personal",
-    country: "Nigeria",
-    status: "Active",
-    verified: "Verified",
-  },
-  {
-    id: 2,
-    name: "Emily Carter",
-    account: "7812304561",
-    type: "Business",
-    country: "USA",
-    status: "Active",
-    verified: "Verified",
-  },
-  {
-    id: 3,
-    name: "Amara Diallo",
-    account: "3301928475",
-    type: "Personal",
-    country: "Ghana",
-    status: "Pending",
-    verified: "Pending",
-  },
-  {
-    id: 4,
-    name: "Lucas Mendes",
-    account: "9923145670",
-    type: "Personal",
-    country: "Brazil",
-    status: "Active",
-    verified: "Verified",
-  },
-  {
-    id: 5,
-    name: "Priya Sharma",
-    account: "6647291830",
-    type: "Business",
-    country: "India",
-    status: "Suspended",
-    verified: "Rejected",
-  },
-  {
-    id: 6,
-    name: "Oliver Thompson",
-    account: "1190384726",
-    type: "Personal",
-    country: "UK",
-    status: "Active",
-    verified: "Verified",
-  },
-  {
-    id: 7,
-    name: "Fatima Al-Hassan",
-    account: "4482039157",
-    type: "Personal",
-    country: "UAE",
-    status: "Pending",
-    verified: "Pending",
-  },
-  {
-    id: 8,
-    name: "Chen Wei",
-    account: "8836512094",
-    type: "Business",
-    country: "Singapore",
-    status: "Active",
-    verified: "Verified",
-  },
-  {
-    id: 9,
-    name: "Sofia Rossi",
-    account: "2271048395",
-    type: "Personal",
-    country: "Italy",
-    status: "Active",
-    verified: "Verified",
-  },
-  {
-    id: 10,
-    name: "Kwame Asante",
-    account: "5563809124",
-    type: "Personal",
-    country: "Ghana",
-    status: "Suspended",
-    verified: "Pending",
-  },
-  {
-    id: 11,
-    name: "Maria Santos",
-    account: "7710293846",
-    type: "Business",
-    country: "Portugal",
-    status: "Active",
-    verified: "Verified",
-  },
-  {
-    id: 12,
-    name: "Ahmed Khalil",
-    account: "3309182475",
-    type: "Personal",
-    country: "Egypt",
-    status: "Pending",
-    verified: "Pending",
-  },
-];
-
-const mockLoans = [
-  {
-    id: 1,
-    name: "James Okonkwo",
-    type: "Personal",
-    amount: "$15,000",
-    purpose: "Home Renovation",
-    date: "Mar 1, 2026",
-    status: "Pending",
-  },
-  {
-    id: 2,
-    name: "Emily Carter",
-    type: "Business",
-    amount: "$120,000",
-    purpose: "Business Expansion",
-    date: "Feb 28, 2026",
-    status: "Approved",
-  },
-  {
-    id: 3,
-    name: "Lucas Mendes",
-    type: "Mortgage",
-    amount: "$280,000",
-    purpose: "Home Purchase",
-    date: "Feb 25, 2026",
-    status: "Pending",
-  },
-  {
-    id: 4,
-    name: "Priya Sharma",
-    type: "Auto",
-    amount: "$32,000",
-    purpose: "Vehicle Purchase",
-    date: "Feb 22, 2026",
-    status: "Rejected",
-  },
-  {
-    id: 5,
-    name: "Oliver Thompson",
-    type: "Personal",
-    amount: "$8,500",
-    purpose: "Education",
-    date: "Feb 20, 2026",
-    status: "Approved",
-  },
-  {
-    id: 6,
-    name: "Fatima Al-Hassan",
-    type: "Community",
-    amount: "$75,000",
-    purpose: "Healthcare Center",
-    date: "Feb 18, 2026",
-    status: "Pending",
-  },
-  {
-    id: 7,
-    name: "Chen Wei",
-    type: "Business",
-    amount: "$200,000",
-    purpose: "Equipment Purchase",
-    date: "Feb 15, 2026",
-    status: "Approved",
-  },
-  {
-    id: 8,
-    name: "Sofia Rossi",
-    type: "Personal",
-    amount: "$5,000",
-    purpose: "Travel",
-    date: "Feb 12, 2026",
-    status: "Pending",
-  },
-  {
-    id: 9,
-    name: "Kwame Asante",
-    type: "Mortgage",
-    amount: "$350,000",
-    purpose: "Property Investment",
-    date: "Feb 10, 2026",
-    status: "Rejected",
-  },
-  {
-    id: 10,
-    name: "Ahmed Khalil",
-    type: "Auto",
-    amount: "$45,000",
-    purpose: "Commercial Vehicle",
-    date: "Feb 8, 2026",
-    status: "Pending",
-  },
-  {
-    id: 11,
-    name: "Maria Santos",
-    type: "Community",
-    amount: "$50,000",
-    purpose: "School Construction",
-    date: "Feb 5, 2026",
-    status: "Approved",
-  },
-  {
-    id: 12,
-    name: "Amara Diallo",
-    type: "Personal",
-    amount: "$3,200",
-    purpose: "Medical Bills",
-    date: "Feb 3, 2026",
-    status: "Pending",
-  },
-  {
-    id: 13,
-    name: "Oliver Thompson",
-    type: "Business",
-    amount: "$90,000",
-    purpose: "Inventory",
-    date: "Jan 30, 2026",
-    status: "Pending",
-  },
-  {
-    id: 14,
-    name: "Priya Sharma",
-    type: "Personal",
-    amount: "$12,000",
-    purpose: "Debt Consolidation",
-    date: "Jan 28, 2026",
-    status: "Rejected",
-  },
-  {
-    id: 15,
-    name: "James Okonkwo",
-    type: "Mortgage",
-    amount: "$180,000",
-    purpose: "Second Home",
-    date: "Jan 25, 2026",
-    status: "Approved",
-  },
-];
-
-const mockKYC = [
-  {
-    id: 1,
-    name: "Amara Diallo",
-    country: "Ghana",
-    idType: "Passport",
-    govId: "GH****8821",
-    date: "Mar 2, 2026",
-    status: "Pending",
-  },
-  {
-    id: 2,
-    name: "Fatima Al-Hassan",
-    country: "UAE",
-    idType: "National ID",
-    govId: "AE****3349",
-    date: "Feb 28, 2026",
-    status: "Pending",
-  },
-  {
-    id: 3,
-    name: "Ahmed Khalil",
-    country: "Egypt",
-    idType: "National ID",
-    govId: "EG****7762",
-    date: "Feb 25, 2026",
-    status: "Pending",
-  },
-  {
-    id: 4,
-    name: "Kwame Asante",
-    country: "Ghana",
-    idType: "Driver's License",
-    govId: "DL****1190",
-    date: "Feb 20, 2026",
-    status: "Rejected",
-  },
-  {
-    id: 5,
-    name: "Lucas Mendes",
-    country: "Brazil",
-    idType: "Passport",
-    govId: "BR****5534",
-    date: "Feb 18, 2026",
-    status: "Approved",
-  },
-  {
-    id: 6,
-    name: "Sofia Rossi",
-    country: "Italy",
-    idType: "Passport",
-    govId: "IT****2209",
-    date: "Feb 15, 2026",
-    status: "Approved",
-  },
-  {
-    id: 7,
-    name: "Maria Santos",
-    country: "Portugal",
-    idType: "National ID",
-    govId: "PT****8844",
-    date: "Feb 12, 2026",
-    status: "Approved",
-  },
-  {
-    id: 8,
-    name: "Chen Wei",
-    country: "Singapore",
-    idType: "Passport",
-    govId: "SG****6671",
-    date: "Feb 10, 2026",
-    status: "Approved",
-  },
-  {
-    id: 9,
-    name: "Oliver Thompson",
-    country: "UK",
-    idType: "National ID",
-    govId: "UK****9923",
-    date: "Feb 8, 2026",
-    status: "Approved",
-  },
-  {
-    id: 10,
-    name: "Emily Carter",
-    country: "USA",
-    idType: "Driver's License",
-    govId: "US****3315",
-    date: "Feb 5, 2026",
-    status: "Approved",
-  },
-];
-
-const mockContacts = [
-  {
-    id: 1,
-    name: "James Okonkwo",
-    email: "james@example.com",
-    type: "Contact Form",
-    subject: "Account Issue",
-    date: "Mar 5, 2026",
-    status: "New",
-  },
-  {
-    id: 2,
-    name: "Emily Carter",
-    email: "emily@example.com",
-    type: "Advisory",
-    subject: "Business Expansion Plan",
-    date: "Mar 4, 2026",
-    status: "In Progress",
-  },
-  {
-    id: 3,
-    name: "Amara Diallo",
-    email: "amara@example.com",
-    type: "Contact Form",
-    subject: "KYC Verification Help",
-    date: "Mar 3, 2026",
-    status: "Resolved",
-  },
-  {
-    id: 4,
-    name: "Lucas Mendes",
-    email: "lucas@example.com",
-    type: "Advisory",
-    subject: "Mortgage Planning",
-    date: "Mar 2, 2026",
-    status: "New",
-  },
-  {
-    id: 5,
-    name: "Priya Sharma",
-    email: "priya@example.com",
-    type: "Contact Form",
-    subject: "Transaction Dispute",
-    date: "Mar 1, 2026",
-    status: "In Progress",
-  },
-  {
-    id: 6,
-    name: "Oliver Thompson",
-    email: "oliver@example.com",
-    type: "Contact Form",
-    subject: "Card Replacement",
-    date: "Feb 28, 2026",
-    status: "Resolved",
-  },
-  {
-    id: 7,
-    name: "Fatima Al-Hassan",
-    email: "fatima@example.com",
-    type: "Advisory",
-    subject: "Investment Strategy",
-    date: "Feb 27, 2026",
-    status: "New",
-  },
-  {
-    id: 8,
-    name: "Chen Wei",
-    email: "chen@example.com",
-    type: "Advisory",
-    subject: "Business Credit Line",
-    date: "Feb 25, 2026",
-    status: "Resolved",
-  },
-  {
-    id: 9,
-    name: "Sofia Rossi",
-    email: "sofia@example.com",
-    type: "Contact Form",
-    subject: "Online Banking Access",
-    date: "Feb 24, 2026",
-    status: "New",
-  },
-  {
-    id: 10,
-    name: "Kwame Asante",
-    email: "kwame@example.com",
-    type: "Contact Form",
-    subject: "Loan Status Inquiry",
-    date: "Feb 22, 2026",
-    status: "Resolved",
-  },
-  {
-    id: 11,
-    name: "Ahmed Khalil",
-    email: "ahmed@example.com",
-    type: "Advisory",
-    subject: "Savings Plan",
-    date: "Feb 20, 2026",
-    status: "In Progress",
-  },
-  {
-    id: 12,
-    name: "Maria Santos",
-    email: "maria@example.com",
-    type: "Contact Form",
-    subject: "Account Upgrade",
-    date: "Feb 18, 2026",
-    status: "New",
-  },
-];
-
-const mockTransactions = [
-  {
-    id: "TXN-001",
-    user: "James Okonkwo",
-    type: "Deposit",
-    amount: "$5,000",
-    date: "Mar 5, 2026",
-    status: "Completed",
-  },
-  {
-    id: "TXN-002",
-    user: "Emily Carter",
-    type: "Transfer",
-    amount: "$12,400",
-    date: "Mar 5, 2026",
-    status: "Completed",
-  },
-  {
-    id: "TXN-003",
-    user: "Lucas Mendes",
-    type: "Withdrawal",
-    amount: "$800",
-    date: "Mar 5, 2026",
-    status: "Completed",
-  },
-  {
-    id: "TXN-004",
-    user: "Priya Sharma",
-    type: "Loan Payment",
-    amount: "$2,100",
-    date: "Mar 4, 2026",
-    status: "Failed",
-  },
-  {
-    id: "TXN-005",
-    user: "Oliver Thompson",
-    type: "Deposit",
-    amount: "$3,500",
-    date: "Mar 4, 2026",
-    status: "Completed",
-  },
-  {
-    id: "TXN-006",
-    user: "Fatima Al-Hassan",
-    type: "Transfer",
-    amount: "$7,200",
-    date: "Mar 4, 2026",
-    status: "Pending",
-  },
-  {
-    id: "TXN-007",
-    user: "Chen Wei",
-    type: "Withdrawal",
-    amount: "$15,000",
-    date: "Mar 3, 2026",
-    status: "Completed",
-  },
-  {
-    id: "TXN-008",
-    user: "Sofia Rossi",
-    type: "Deposit",
-    amount: "$1,200",
-    date: "Mar 3, 2026",
-    status: "Completed",
-  },
-  {
-    id: "TXN-009",
-    user: "Kwame Asante",
-    type: "Loan Payment",
-    amount: "$450",
-    date: "Mar 3, 2026",
-    status: "Failed",
-  },
-  {
-    id: "TXN-010",
-    user: "Ahmed Khalil",
-    type: "Transfer",
-    amount: "$9,800",
-    date: "Mar 2, 2026",
-    status: "Completed",
-  },
-  {
-    id: "TXN-011",
-    user: "Maria Santos",
-    type: "Deposit",
-    amount: "$22,000",
-    date: "Mar 2, 2026",
-    status: "Completed",
-  },
-  {
-    id: "TXN-012",
-    user: "Amara Diallo",
-    type: "Withdrawal",
-    amount: "$300",
-    date: "Mar 2, 2026",
-    status: "Completed",
-  },
-  {
-    id: "TXN-013",
-    user: "James Okonkwo",
-    type: "Transfer",
-    amount: "$4,500",
-    date: "Mar 1, 2026",
-    status: "Pending",
-  },
-  {
-    id: "TXN-014",
-    user: "Emily Carter",
-    type: "Loan Payment",
-    amount: "$8,300",
-    date: "Mar 1, 2026",
-    status: "Completed",
-  },
-  {
-    id: "TXN-015",
-    user: "Lucas Mendes",
-    type: "Deposit",
-    amount: "$6,700",
-    date: "Feb 28, 2026",
-    status: "Completed",
-  },
-  {
-    id: "TXN-016",
-    user: "Oliver Thompson",
-    type: "Withdrawal",
-    amount: "$1,800",
-    date: "Feb 28, 2026",
-    status: "Completed",
-  },
-  {
-    id: "TXN-017",
-    user: "Chen Wei",
-    type: "Transfer",
-    amount: "$30,000",
-    date: "Feb 27, 2026",
-    status: "Completed",
-  },
-  {
-    id: "TXN-018",
-    user: "Sofia Rossi",
-    type: "Withdrawal",
-    amount: "$2,500",
-    date: "Feb 27, 2026",
-    status: "Failed",
-  },
-  {
-    id: "TXN-019",
-    user: "Ahmed Khalil",
-    type: "Deposit",
-    amount: "$11,000",
-    date: "Feb 26, 2026",
-    status: "Completed",
-  },
-  {
-    id: "TXN-020",
-    user: "Maria Santos",
-    type: "Loan Payment",
-    amount: "$5,600",
-    date: "Feb 26, 2026",
-    status: "Completed",
-  },
-];
-
-const mockAccountRequests = [
-  {
-    id: 1,
-    name: "Grace Adeola",
-    type: "Personal Savings",
-    date: "Mar 5, 2026",
-    documents: "ID + Utility Bill",
-    status: "Pending",
-  },
-  {
-    id: 2,
-    name: "Ravi Patel",
-    type: "Business Checking",
-    date: "Mar 4, 2026",
-    documents: "CAC + ID",
-    status: "Pending",
-  },
-  {
-    id: 3,
-    name: "Yuki Tanaka",
-    type: "Personal Checking",
-    date: "Mar 3, 2026",
-    documents: "Passport",
-    status: "Approved",
-  },
-  {
-    id: 4,
-    name: "Lena Fischer",
-    type: "Fixed Deposit",
-    date: "Mar 2, 2026",
-    documents: "ID + Bank Statement",
-    status: "Approved",
-  },
-  {
-    id: 5,
-    name: "Carlos Rivera",
-    type: "Business Savings",
-    date: "Mar 1, 2026",
-    documents: "Business License + ID",
-    status: "Pending",
-  },
-  {
-    id: 6,
-    name: "Nadia Osei",
-    type: "Personal Savings",
-    date: "Feb 28, 2026",
-    documents: "National ID",
-    status: "Rejected",
-  },
-  {
-    id: 7,
-    name: "Tariq Bashir",
-    type: "Personal Checking",
-    date: "Feb 27, 2026",
-    documents: "Passport + Proof of Address",
-    status: "Approved",
-  },
-  {
-    id: 8,
-    name: "Isabelle Dupont",
-    type: "Fixed Deposit",
-    date: "Feb 25, 2026",
-    documents: "ID + Employment Letter",
-    status: "Pending",
-  },
-];
-
-const recentActivity = [
-  {
-    time: "2 min ago",
-    event: "New KYC submission from Amara Diallo",
-    type: "kyc",
-  },
-  {
-    time: "15 min ago",
-    event: "Loan application approved for Chen Wei ($200K)",
-    type: "loan",
-  },
-  {
-    time: "32 min ago",
-    event: "User James Okonkwo logged in from Nigeria",
-    type: "login",
-  },
-  {
-    time: "1 hr ago",
-    event: "Transaction TXN-006 pending review ($7,200)",
-    type: "transaction",
-  },
-  {
-    time: "1 hr ago",
-    event: "Advisory request from Emily Carter",
-    type: "contact",
-  },
-  {
-    time: "2 hrs ago",
-    event: "Account opening request from Grace Adeola",
-    type: "account",
-  },
-  { time: "3 hrs ago", event: "KYC rejected for Kwame Asante", type: "kyc" },
-  {
-    time: "4 hrs ago",
-    event: "New user registration: Ahmed Khalil (Egypt)",
-    type: "login",
-  },
-  {
-    time: "5 hrs ago",
-    event: "Loan application received — Lucas Mendes ($280K Mortgage)",
-    type: "loan",
-  },
-  {
-    time: "6 hrs ago",
-    event: "System maintenance window completed successfully",
-    type: "system",
-  },
-];
-
-const visitorLog = [
-  {
-    time: "Mar 5, 14:32",
-    page: "/services/loans",
-    device: "Chrome/Desktop",
-    country: "Nigeria",
-    ip: "197.210.***.***",
-  },
-  {
-    time: "Mar 5, 14:28",
-    page: "/dashboard",
-    device: "Safari/iPhone",
-    country: "USA",
-    ip: "104.28.***.***",
-  },
-  {
-    time: "Mar 5, 14:21",
-    page: "/",
-    device: "Firefox/Desktop",
-    country: "UK",
-    ip: "82.37.***.***",
-  },
-  {
-    time: "Mar 5, 14:15",
-    page: "/services/personal",
-    device: "Chrome/Android",
-    country: "Ghana",
-    ip: "154.120.***.***",
-  },
-  {
-    time: "Mar 5, 14:09",
-    page: "/open-account",
-    device: "Edge/Desktop",
-    country: "India",
-    ip: "49.36.***.***",
-  },
-  {
-    time: "Mar 5, 14:02",
-    page: "/about",
-    device: "Safari/iPad",
-    country: "UAE",
-    ip: "5.100.***.***",
-  },
-  {
-    time: "Mar 5, 13:58",
-    page: "/contact",
-    device: "Chrome/Desktop",
-    country: "Brazil",
-    ip: "189.28.***.***",
-  },
-  {
-    time: "Mar 5, 13:45",
-    page: "/services/business",
-    device: "Chrome/Desktop",
-    country: "Singapore",
-    ip: "103.6.***.***",
-  },
-];
-
-const topPages = [
-  { page: "/", views: 1842, avgTime: "1m 45s", bounce: "28%" },
-  { page: "/services/personal", views: 1204, avgTime: "3m 12s", bounce: "22%" },
-  { page: "/services/loans", views: 986, avgTime: "4m 05s", bounce: "18%" },
-  { page: "/dashboard", views: 874, avgTime: "8m 30s", bounce: "9%" },
-  { page: "/open-account", views: 762, avgTime: "5m 18s", bounce: "15%" },
-  { page: "/about", views: 541, avgTime: "2m 03s", bounce: "41%" },
-  { page: "/contact", views: 398, avgTime: "1m 52s", bounce: "35%" },
-  { page: "/services/business", views: 322, avgTime: "3m 48s", bounce: "24%" },
-];
-
-const dailyVisits = [
-  { day: "Mon", visits: 284 },
-  { day: "Tue", visits: 341 },
-  { day: "Wed", visits: 318 },
-  { day: "Thu", visits: 412 },
-  { day: "Fri", visits: 387 },
-  { day: "Sat", visits: 220 },
-  { day: "Sun", visits: 142 },
-];
 
 // ─── Status Badges ────────────────────────────────────────────────────────────
 
@@ -898,12 +90,386 @@ function StatusBadge({ status }: { status: string }) {
   );
 }
 
-function Initials({ name }: { name: string }) {
-  const parts = name.split(" ");
+// ─── Registered Users ────────────────────────────────────────────────────────
+
+function RegisteredUsers() {
+  const { actor } = useActor();
+  const [users, setUsers] = useState<AdminUserRecord[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  const loadUsers = async () => {
+    if (!actor) return;
+    setLoading(true);
+    try {
+      const result = await (actor as any).adminGetAllUsers();
+      setUsers(result);
+    } catch {
+      toast.error("Failed to load registered users.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // biome-ignore lint/correctness/useExhaustiveDependencies: load on mount
+  useEffect(() => {
+    if (actor) void loadUsers();
+  }, [actor]);
+
+  const formatPrincipal = (p: { toString(): string }) => {
+    const s = p.toString();
+    return `${s.slice(0, 10)}...${s.slice(-6)}`;
+  };
+
   return (
-    <div className="w-8 h-8 rounded-full bg-bank-navy/10 text-bank-navy text-xs font-bold flex items-center justify-center shrink-0">
-      {parts[0]?.[0]}
-      {parts[1]?.[0]}
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="font-display text-xl font-bold text-bank-navy">
+            Registered Users
+          </h2>
+          <p className="text-sm text-muted-foreground mt-0.5">
+            All users who have signed up on TRUPTAR Bank
+          </p>
+        </div>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={loadUsers}
+          className="gap-2"
+          data-ocid="admin.registered_users.secondary_button"
+        >
+          <RefreshCw className="h-4 w-4" /> Refresh
+        </Button>
+      </div>
+
+      <Card data-ocid="admin.registered_users.card">
+        <CardContent className="p-0 overflow-x-auto">
+          {loading ? (
+            <div
+              className="p-8 text-center text-muted-foreground"
+              data-ocid="admin.registered_users.loading_state"
+            >
+              Loading users...
+            </div>
+          ) : users.length === 0 ? (
+            <div
+              className="p-8 text-center text-muted-foreground"
+              data-ocid="admin.registered_users.empty_state"
+            >
+              No users have registered yet.
+            </div>
+          ) : (
+            <Table data-ocid="admin.registered_users.table">
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="text-bank-navy font-semibold text-xs">
+                    #
+                  </TableHead>
+                  <TableHead className="text-bank-navy font-semibold text-xs">
+                    Principal
+                  </TableHead>
+                  <TableHead className="text-bank-navy font-semibold text-xs">
+                    Account Number
+                  </TableHead>
+                  <TableHead className="text-bank-navy font-semibold text-xs text-right">
+                    Balance
+                  </TableHead>
+                  <TableHead className="text-bank-navy font-semibold text-xs">
+                    Full Name
+                  </TableHead>
+                  <TableHead className="text-bank-navy font-semibold text-xs">
+                    Email
+                  </TableHead>
+                  <TableHead className="text-bank-navy font-semibold text-xs">
+                    KYC Status
+                  </TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {users.map((u, i) => (
+                  <TableRow
+                    key={u.accountNumber}
+                    data-ocid={`admin.registered_users.row.${i + 1}`}
+                  >
+                    <TableCell className="text-xs text-muted-foreground">
+                      {i + 1}
+                    </TableCell>
+                    <TableCell className="font-mono text-xs text-muted-foreground">
+                      {formatPrincipal(u.principal)}
+                    </TableCell>
+                    <TableCell className="font-mono text-sm font-semibold text-bank-navy">
+                      {u.accountNumber}
+                    </TableCell>
+                    <TableCell className="text-sm font-bold text-right text-bank-gold">
+                      $
+                      {u.balance.toLocaleString("en-US", {
+                        minimumFractionDigits: 2,
+                        maximumFractionDigits: 2,
+                      })}
+                    </TableCell>
+                    <TableCell className="text-sm">
+                      {u.profile?.personalInfo?.fullName || (
+                        <span className="text-muted-foreground italic text-xs">
+                          No profile yet
+                        </span>
+                      )}
+                    </TableCell>
+                    <TableCell className="text-sm text-muted-foreground">
+                      {u.profile?.contactInfo?.email || (
+                        <span className="italic text-xs">—</span>
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      {u.profile?.kycData?.kycStatus ? (
+                        <Badge
+                          className={`text-xs ${
+                            u.profile.kycData.kycStatus === "approved"
+                              ? "bg-emerald-100 text-emerald-700 border-emerald-200"
+                              : u.profile.kycData.kycStatus === "pending"
+                                ? "bg-amber-100 text-amber-700 border-amber-200"
+                                : "bg-red-100 text-red-700 border-red-200"
+                          }`}
+                        >
+                          {u.profile.kycData.kycStatus.charAt(0).toUpperCase() +
+                            u.profile.kycData.kycStatus.slice(1)}
+                        </Badge>
+                      ) : (
+                        <span className="text-xs text-muted-foreground italic">
+                          Not submitted
+                        </span>
+                      )}
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          )}
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
+// ─── Transaction Requests ─────────────────────────────────────────────────────
+
+function TransactionRequests() {
+  const { actor } = useActor();
+  const [requests, setRequests] = useState<PendingRequest[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [processing, setProcessing] = useState<string | null>(null);
+
+  const loadRequests = async () => {
+    if (!actor) return;
+    setLoading(true);
+    try {
+      const result = await (actor as any).adminGetPendingRequests();
+      setRequests(result);
+    } catch {
+      toast.error("Failed to load transaction requests.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // biome-ignore lint/correctness/useExhaustiveDependencies: load on mount
+  useEffect(() => {
+    if (actor) void loadRequests();
+  }, [actor]);
+
+  const handleConfirm = async (requestId: string, approve: boolean) => {
+    if (!actor) return;
+    setProcessing(requestId);
+    try {
+      await (actor as any).adminConfirmRequest(requestId, approve);
+      toast.success(
+        approve
+          ? "Request approved and applied to account."
+          : "Request rejected.",
+      );
+      await loadRequests();
+    } catch {
+      toast.error("Action failed. Please try again.");
+    } finally {
+      setProcessing(null);
+    }
+  };
+
+  const formatPrincipal = (p: { toString(): string }) => {
+    const s = p.toString();
+    return `${s.slice(0, 10)}...${s.slice(-6)}`;
+  };
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="font-display text-xl font-bold text-bank-navy">
+            Transaction Requests
+          </h2>
+          <p className="text-sm text-muted-foreground mt-0.5">
+            Approve or reject all deposit and withdrawal requests
+          </p>
+        </div>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={loadRequests}
+          className="gap-2"
+          data-ocid="admin.transaction_requests.secondary_button"
+        >
+          <RefreshCw className="h-4 w-4" /> Refresh
+        </Button>
+      </div>
+
+      <div className="flex gap-3 flex-wrap">
+        {["all", "pending", "approved", "rejected"].map((f) => (
+          <Badge
+            key={f}
+            variant="outline"
+            className="capitalize cursor-default"
+          >
+            {f === "all"
+              ? `All (${requests.length})`
+              : `${f} (${requests.filter((r) => r.status.__kind__ === f).length})`}
+          </Badge>
+        ))}
+      </div>
+
+      <Card data-ocid="admin.transaction_requests.card">
+        <CardContent className="p-0 overflow-x-auto">
+          {loading ? (
+            <div
+              className="p-8 text-center text-muted-foreground"
+              data-ocid="admin.transaction_requests.loading_state"
+            >
+              Loading requests...
+            </div>
+          ) : requests.length === 0 ? (
+            <div
+              className="p-8 text-center text-muted-foreground"
+              data-ocid="admin.transaction_requests.empty_state"
+            >
+              No transaction requests yet.
+            </div>
+          ) : (
+            <Table data-ocid="admin.transaction_requests.table">
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="text-bank-navy font-semibold text-xs">
+                    Request ID
+                  </TableHead>
+                  <TableHead className="text-bank-navy font-semibold text-xs">
+                    User
+                  </TableHead>
+                  <TableHead className="text-bank-navy font-semibold text-xs">
+                    Type
+                  </TableHead>
+                  <TableHead className="text-bank-navy font-semibold text-xs text-right">
+                    Amount
+                  </TableHead>
+                  <TableHead className="text-bank-navy font-semibold text-xs">
+                    Description
+                  </TableHead>
+                  <TableHead className="text-bank-navy font-semibold text-xs">
+                    Date
+                  </TableHead>
+                  <TableHead className="text-bank-navy font-semibold text-xs">
+                    Status
+                  </TableHead>
+                  <TableHead className="text-bank-navy font-semibold text-xs">
+                    Actions
+                  </TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {requests.map((req, i) => (
+                  <TableRow
+                    key={req.requestId}
+                    data-ocid={`admin.transaction_requests.row.${i + 1}`}
+                  >
+                    <TableCell className="font-mono text-xs text-muted-foreground">
+                      {req.requestId.slice(0, 12)}...
+                    </TableCell>
+                    <TableCell className="font-mono text-xs text-muted-foreground">
+                      {formatPrincipal(req.owner)}
+                    </TableCell>
+                    <TableCell>
+                      <Badge
+                        className={`text-xs ${req.requestType.__kind__ === "deposit" ? "bg-emerald-100 text-emerald-700 border-emerald-200" : "bg-blue-100 text-blue-700 border-blue-200"}`}
+                      >
+                        {req.requestType.__kind__ === "deposit"
+                          ? "Deposit"
+                          : "Withdrawal"}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="text-sm font-bold text-right text-bank-gold">
+                      $
+                      {req.amount.toLocaleString("en-US", {
+                        minimumFractionDigits: 2,
+                        maximumFractionDigits: 2,
+                      })}
+                    </TableCell>
+                    <TableCell className="text-xs text-muted-foreground max-w-[140px] truncate">
+                      {req.description}
+                    </TableCell>
+                    <TableCell className="text-xs text-muted-foreground">
+                      {req.date}
+                    </TableCell>
+                    <TableCell>
+                      <Badge
+                        className={`text-xs ${
+                          req.status.__kind__ === "pending"
+                            ? "bg-amber-100 text-amber-700 border-amber-200"
+                            : req.status.__kind__ === "approved"
+                              ? "bg-emerald-100 text-emerald-700 border-emerald-200"
+                              : "bg-red-100 text-red-700 border-red-200"
+                        }`}
+                      >
+                        {req.status.__kind__ === "pending"
+                          ? "Pending"
+                          : req.status.__kind__ === "approved"
+                            ? "Approved"
+                            : "Rejected"}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      {req.status.__kind__ === "pending" ? (
+                        <div className="flex gap-2">
+                          <Button
+                            size="sm"
+                            className="h-7 text-xs bg-emerald-600 hover:bg-emerald-700 text-white"
+                            disabled={processing === req.requestId}
+                            onClick={() => handleConfirm(req.requestId, true)}
+                            data-ocid={`admin.transaction_requests.confirm_button.${i + 1}`}
+                          >
+                            <CheckCircle className="h-3 w-3 mr-1" />
+                            {processing === req.requestId ? "..." : "Approve"}
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="h-7 text-xs border-red-200 text-red-700 hover:bg-red-50"
+                            disabled={processing === req.requestId}
+                            onClick={() => handleConfirm(req.requestId, false)}
+                            data-ocid={`admin.transaction_requests.delete_button.${i + 1}`}
+                          >
+                            <XCircle className="h-3 w-3 mr-1" />
+                            Reject
+                          </Button>
+                        </div>
+                      ) : (
+                        <span className="text-xs text-muted-foreground italic">
+                          Processed
+                        </span>
+                      )}
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
 }
@@ -913,46 +479,73 @@ function Initials({ name }: { name: string }) {
 function DashboardOverview({
   setSection,
 }: { setSection: (s: Section) => void }) {
+  const { actor } = useActor();
+  const [allUsers, setAllUsers] = useState<AdminUserRecord[]>([]);
+  const [pendingRequests, setPendingRequests] = useState<PendingRequest[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (!actor) return;
+    setLoading(true);
+    Promise.all([
+      (actor as any).adminGetAllUsers() as Promise<AdminUserRecord[]>,
+      (actor as any).adminGetPendingRequests() as Promise<PendingRequest[]>,
+    ])
+      .then(([users, requests]) => {
+        setAllUsers(users);
+        setPendingRequests(requests);
+      })
+      .catch(() => toast.error("Failed to load dashboard data."))
+      .finally(() => setLoading(false));
+  }, [actor]);
+
+  const today = new Date().toISOString().slice(0, 10);
+  const totalUsers = allUsers.length;
+  const pendingCount = pendingRequests.filter(
+    (r) => r.status.__kind__ === "pending",
+  ).length;
+  const activeAccounts = allUsers.filter((u) => u.balance > 0).length;
+  const transactionsToday = pendingRequests.filter((r) =>
+    r.date.startsWith(today),
+  ).length;
+
   const kpis = [
     {
       label: "Total Users",
-      value: "1,248",
+      value: loading ? "—" : totalUsers.toLocaleString(),
       icon: Users,
-      trend: "+12 this week",
+      trend: "Registered accounts",
       color: "text-bank-navy",
     },
     {
       label: "Pending Requests",
-      value: "23",
+      value: loading ? "—" : pendingCount.toLocaleString(),
       icon: AlertTriangle,
       trend: "Needs attention",
       color: "text-amber-600",
     },
     {
       label: "Active Accounts",
-      value: "1,180",
+      value: loading ? "—" : activeAccounts.toLocaleString(),
+      trend:
+        totalUsers > 0
+          ? `${Math.round((activeAccounts / totalUsers) * 100)}% of users`
+          : "—",
       icon: CheckCircle,
-      trend: "94.5% of users",
       color: "text-emerald-600",
     },
     {
       label: "Transactions Today",
-      value: "87",
+      value: loading ? "—" : transactionsToday.toLocaleString(),
       icon: Activity,
-      trend: "$142K volume",
+      trend: "Requests submitted today",
       color: "text-blue-600",
     },
   ];
 
-  const activityIcons: Record<string, React.ReactNode> = {
-    kyc: <UserCheck className="h-3.5 w-3.5 text-purple-600" />,
-    loan: <CreditCard className="h-3.5 w-3.5 text-blue-600" />,
-    login: <User className="h-3.5 w-3.5 text-emerald-600" />,
-    transaction: <Activity className="h-3.5 w-3.5 text-amber-600" />,
-    contact: <MessageSquare className="h-3.5 w-3.5 text-pink-600" />,
-    account: <FileText className="h-3.5 w-3.5 text-teal-600" />,
-    system: <Settings className="h-3.5 w-3.5 text-gray-600" />,
-  };
+  const recentActivity = [...pendingRequests]
+    .sort((a, b) => b.date.localeCompare(a.date))
+    .slice(0, 10);
 
   return (
     <div className="space-y-6">
@@ -961,7 +554,8 @@ function DashboardOverview({
           Dashboard Overview
         </h2>
         <p className="text-muted-foreground text-sm mt-1">
-          Welcome back, Admin. Here&apos;s what&apos;s happening today.
+          Welcome back, Admin. Here&apos;s what&apos;s happening on TRUPTAR
+          Bank.
         </p>
       </div>
 
@@ -1004,27 +598,62 @@ function DashboardOverview({
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
-            {recentActivity.map((item, i) => (
-              <div
-                key={item.event}
-                className="flex items-start gap-3 py-2 border-b border-border last:border-0"
-                data-ocid={
-                  `admin.activity.item.${i + 1}` as `admin.activity.item.${1}`
-                }
+            {loading ? (
+              <p
+                className="text-sm text-muted-foreground py-4 text-center"
+                data-ocid="admin.activity.loading_state"
               >
-                <div className="w-6 h-6 rounded-full bg-bank-navy/5 flex items-center justify-center mt-0.5 shrink-0">
-                  {activityIcons[item.type]}
+                Loading activity...
+              </p>
+            ) : recentActivity.length === 0 ? (
+              <p
+                className="text-sm text-muted-foreground py-8 text-center"
+                data-ocid="admin.activity.empty_state"
+              >
+                No activity yet. Transactions will appear here once customers
+                make requests.
+              </p>
+            ) : (
+              recentActivity.map((req, i) => (
+                <div
+                  key={req.requestId}
+                  className="flex items-start gap-3 py-2 border-b border-border last:border-0"
+                  data-ocid={
+                    `admin.activity.item.${i + 1}` as `admin.activity.item.${1}`
+                  }
+                >
+                  <div className="w-6 h-6 rounded-full bg-bank-navy/5 flex items-center justify-center mt-0.5 shrink-0">
+                    <Activity className="h-3.5 w-3.5 text-amber-600" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm text-foreground leading-snug">
+                      {req.requestType.__kind__ === "deposit"
+                        ? "Deposit"
+                        : "Withdrawal"}{" "}
+                      request of $
+                      {req.amount.toLocaleString("en-US", {
+                        minimumFractionDigits: 2,
+                      })}{" "}
+                      — {req.description || "No description"}
+                    </p>
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      {req.date}
+                    </p>
+                  </div>
+                  <Badge
+                    className={`text-xs shrink-0 ${
+                      req.status.__kind__ === "pending"
+                        ? "bg-amber-100 text-amber-700"
+                        : req.status.__kind__ === "approved"
+                          ? "bg-emerald-100 text-emerald-700"
+                          : "bg-red-100 text-red-700"
+                    }`}
+                  >
+                    {req.status.__kind__}
+                  </Badge>
                 </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm text-foreground leading-snug">
-                    {item.event}
-                  </p>
-                </div>
-                <span className="text-xs text-muted-foreground shrink-0 whitespace-nowrap">
-                  {item.time}
-                </span>
-              </div>
-            ))}
+              ))
+            )}
           </CardContent>
         </Card>
 
@@ -1038,28 +667,34 @@ function DashboardOverview({
           <CardContent className="space-y-3">
             {[
               {
-                label: "Review KYC Requests",
+                label: "Transaction Requests",
+                section: "transaction_requests" as Section,
+                icon: Activity,
+              },
+              {
+                label: "Registered Users",
+                section: "registered_users" as Section,
+                icon: Users,
+              },
+              {
+                label: "KYC Verification",
                 section: "kyc" as Section,
                 icon: UserCheck,
-                count: 3,
               },
               {
-                label: "Approve Loans",
+                label: "Loan Applications",
                 section: "loans" as Section,
                 icon: CreditCard,
-                count: 5,
               },
               {
-                label: "View Contact Requests",
+                label: "Contact Requests",
                 section: "contacts" as Section,
                 icon: MessageSquare,
-                count: 4,
               },
               {
                 label: "System Settings",
                 section: "settings" as Section,
                 icon: Settings,
-                count: 0,
               },
             ].map((action) => (
               <button
@@ -1073,11 +708,6 @@ function DashboardOverview({
                 <span className="text-sm font-medium text-bank-navy flex-1">
                   {action.label}
                 </span>
-                {action.count > 0 && (
-                  <span className="bg-amber-500 text-white text-xs font-bold px-2 py-0.5 rounded-full">
-                    {action.count}
-                  </span>
-                )}
                 <ChevronRight className="h-4 w-4 text-bank-navy/40" />
               </button>
             ))}
@@ -1089,33 +719,39 @@ function DashboardOverview({
 }
 
 function UserManagement() {
+  const { actor } = useActor();
+  const [users, setUsers] = useState<AdminUserRecord[]>([]);
+  const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
-  const [statusFilter, setStatusFilter] = useState("All");
   const [page, setPage] = useState(1);
-  const [selected, setSelected] = useState<(typeof mockUsers)[0] | null>(null);
-  const [users, setUsers] = useState(mockUsers);
   const perPage = 10;
 
+  useEffect(() => {
+    if (!actor) return;
+    setLoading(true);
+    (actor as any)
+      .adminGetAllUsers()
+      .then((result: AdminUserRecord[]) => setUsers(result))
+      .catch(() => toast.error("Failed to load users."))
+      .finally(() => setLoading(false));
+  }, [actor]);
+
   const filtered = users.filter((u) => {
-    const matchSearch =
-      u.name.toLowerCase().includes(search.toLowerCase()) ||
-      u.account.includes(search);
-    const matchStatus = statusFilter === "All" || u.status === statusFilter;
-    return matchSearch && matchStatus;
+    const name = u.profile?.personalInfo?.fullName?.toLowerCase() || "";
+    return (
+      name.includes(search.toLowerCase()) ||
+      u.accountNumber.includes(search) ||
+      u.principal.toString().includes(search)
+    );
   });
 
   const paginated = filtered.slice((page - 1) * perPage, page * perPage);
-  const totalPages = Math.ceil(filtered.length / perPage);
+  const totalPages = Math.max(1, Math.ceil(filtered.length / perPage));
 
-  function toggleStatus(id: number) {
-    setUsers((prev) =>
-      prev.map((u) =>
-        u.id === id
-          ? { ...u, status: u.status === "Active" ? "Suspended" : "Active" }
-          : u,
-      ),
-    );
-  }
+  const formatPrincipal = (p: { toString(): string }) => {
+    const s = p.toString();
+    return `${s.slice(0, 10)}...${s.slice(-6)}`;
+  };
 
   return (
     <div className="space-y-5">
@@ -1130,7 +766,7 @@ function UserManagement() {
 
       <div className="flex flex-col sm:flex-row gap-3">
         <Input
-          placeholder="Search by name or account..."
+          placeholder="Search by name, account, or principal..."
           value={search}
           onChange={(e) => {
             setSearch(e.target.value);
@@ -1139,197 +775,157 @@ function UserManagement() {
           className="max-w-sm"
           data-ocid="admin.users.search_input"
         />
-        <Select
-          value={statusFilter}
-          onValueChange={(v) => {
-            setStatusFilter(v);
-            setPage(1);
-          }}
+      </div>
+
+      {loading ? (
+        <div
+          className="p-8 text-center text-muted-foreground"
+          data-ocid="admin.users.loading_state"
         >
-          <SelectTrigger className="w-40" data-ocid="admin.users.select">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            {["All", "Active", "Suspended", "Pending"].map((s) => (
-              <SelectItem key={s} value={s}>
-                {s}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
-
-      <div className="rounded-xl border border-border overflow-hidden">
-        <Table>
-          <TableHeader>
-            <TableRow className="bg-bank-navy/5">
-              <TableHead>User</TableHead>
-              <TableHead>Account #</TableHead>
-              <TableHead>Type</TableHead>
-              <TableHead>Country</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead>Verified</TableHead>
-              <TableHead>Actions</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {paginated.map((u, i) => (
-              <TableRow
-                key={u.id}
-                data-ocid={
-                  `admin.users.item.${i + 1}` as `admin.users.item.${1}`
-                }
-              >
-                <TableCell>
-                  <div className="flex items-center gap-2">
-                    <Initials name={u.name} />
-                    <span className="font-medium text-sm">{u.name}</span>
-                  </div>
-                </TableCell>
-                <TableCell className="text-sm text-muted-foreground font-mono">
-                  {u.account}
-                </TableCell>
-                <TableCell className="text-sm">{u.type}</TableCell>
-                <TableCell className="text-sm">{u.country}</TableCell>
-                <TableCell>
-                  <StatusBadge status={u.status} />
-                </TableCell>
-                <TableCell>
-                  <StatusBadge status={u.verified} />
-                </TableCell>
-                <TableCell>
-                  <div className="flex gap-2">
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => setSelected(u)}
-                      data-ocid={
-                        `admin.users.view_button.${i + 1}` as `admin.users.view_button.${1}`
-                      }
-                    >
-                      View
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      className={
-                        u.status === "Active"
-                          ? "text-red-600 border-red-200 hover:bg-red-50"
-                          : "text-emerald-600 border-emerald-200 hover:bg-emerald-50"
-                      }
-                      onClick={() => toggleStatus(u.id)}
-                      data-ocid={
-                        `admin.users.toggle.${i + 1}` as `admin.users.toggle.${1}`
-                      }
-                    >
-                      {u.status === "Active" ? "Suspend" : "Activate"}
-                    </Button>
-                  </div>
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </div>
-
-      {/* Pagination */}
-      <div className="flex items-center justify-between">
-        <p className="text-sm text-muted-foreground">
-          Showing {paginated.length} of {filtered.length} users
-        </p>
-        <div className="flex gap-2">
-          <Button
-            size="sm"
-            variant="outline"
-            disabled={page === 1}
-            onClick={() => setPage((p) => p - 1)}
-            data-ocid="admin.users.pagination_prev"
-          >
-            Prev
-          </Button>
-          <span className="text-sm px-3 py-1 bg-bank-navy/5 rounded">
-            {page} / {totalPages}
-          </span>
-          <Button
-            size="sm"
-            variant="outline"
-            disabled={page === totalPages}
-            onClick={() => setPage((p) => p + 1)}
-            data-ocid="admin.users.pagination_next"
-          >
-            Next
-          </Button>
+          Loading users...
         </div>
-      </div>
+      ) : filtered.length === 0 ? (
+        <div
+          className="p-8 text-center text-muted-foreground"
+          data-ocid="admin.users.empty_state"
+        >
+          {users.length === 0
+            ? "No users have registered yet."
+            : "No users match your search."}
+        </div>
+      ) : (
+        <>
+          <div className="rounded-xl border border-border overflow-hidden">
+            <Table>
+              <TableHeader>
+                <TableRow className="bg-bank-navy/5">
+                  <TableHead>#</TableHead>
+                  <TableHead>Principal</TableHead>
+                  <TableHead>Account #</TableHead>
+                  <TableHead>Full Name</TableHead>
+                  <TableHead>Email</TableHead>
+                  <TableHead className="text-right">Balance</TableHead>
+                  <TableHead>KYC</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {paginated.map((u, i) => (
+                  <TableRow
+                    key={u.accountNumber}
+                    data-ocid={
+                      `admin.users.item.${i + 1}` as `admin.users.item.${1}`
+                    }
+                  >
+                    <TableCell className="text-xs text-muted-foreground">
+                      {(page - 1) * perPage + i + 1}
+                    </TableCell>
+                    <TableCell className="font-mono text-xs text-muted-foreground">
+                      {formatPrincipal(u.principal)}
+                    </TableCell>
+                    <TableCell className="font-mono text-sm font-semibold text-bank-navy">
+                      {u.accountNumber}
+                    </TableCell>
+                    <TableCell className="text-sm">
+                      {u.profile?.personalInfo?.fullName || (
+                        <span className="text-muted-foreground italic text-xs">
+                          No profile
+                        </span>
+                      )}
+                    </TableCell>
+                    <TableCell className="text-sm text-muted-foreground">
+                      {u.profile?.contactInfo?.email || (
+                        <span className="italic text-xs">—</span>
+                      )}
+                    </TableCell>
+                    <TableCell className="text-sm font-bold text-right text-bank-gold">
+                      $
+                      {u.balance.toLocaleString("en-US", {
+                        minimumFractionDigits: 2,
+                        maximumFractionDigits: 2,
+                      })}
+                    </TableCell>
+                    <TableCell>
+                      {u.profile?.kycData?.kycStatus ? (
+                        <StatusBadge
+                          status={
+                            u.profile.kycData.kycStatus
+                              .charAt(0)
+                              .toUpperCase() +
+                            u.profile.kycData.kycStatus.slice(1)
+                          }
+                        />
+                      ) : (
+                        <span className="text-xs text-muted-foreground italic">
+                          Not submitted
+                        </span>
+                      )}
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
 
-      {/* Side panel */}
-      {selected && (
-        <div className="fixed inset-0 z-50 flex">
-          <button
-            type="button"
-            className="flex-1 bg-black/40"
-            onClick={() => setSelected(null)}
-          />
-          <div className="w-80 bg-white shadow-2xl border-l border-border overflow-y-auto">
-            <div className="flex items-center justify-between p-5 border-b border-border">
-              <h3 className="font-semibold text-bank-navy">User Details</h3>
-              <button type="button" onClick={() => setSelected(null)}>
-                <X className="h-5 w-5" />
-              </button>
-            </div>
-            <div className="p-5 space-y-4">
-              <div className="flex items-center gap-3">
-                <div className="w-14 h-14 rounded-full bg-bank-navy text-white text-lg font-bold flex items-center justify-center">
-                  {selected.name
-                    .split(" ")
-                    .map((n) => n[0])
-                    .join("")}
-                </div>
-                <div>
-                  <p className="font-semibold text-bank-navy">
-                    {selected.name}
-                  </p>
-                  <p className="text-xs text-muted-foreground">
-                    {selected.type} Customer
-                  </p>
-                </div>
-              </div>
-              {(
-                [
-                  ["Account Number", selected.account],
-                  ["Account Type", selected.type],
-                  ["Country", selected.country],
-                  ["Status", selected.status],
-                  ["Verification", selected.verified],
-                ] as [string, string][]
-              ).map(([k, v]) => (
-                <div
-                  key={k}
-                  className="flex justify-between items-center py-2 border-b border-border last:border-0"
-                >
-                  <span className="text-sm text-muted-foreground">{k}</span>
-                  <span className="text-sm font-medium">{v}</span>
-                </div>
-              ))}
+          <div className="flex items-center justify-between">
+            <p className="text-sm text-muted-foreground">
+              Showing {paginated.length} of {filtered.length} users
+            </p>
+            <div className="flex gap-2">
+              <Button
+                size="sm"
+                variant="outline"
+                disabled={page === 1}
+                onClick={() => setPage((p) => p - 1)}
+                data-ocid="admin.users.pagination_prev"
+              >
+                Prev
+              </Button>
+              <span className="text-sm px-3 py-1 bg-bank-navy/5 rounded">
+                {page} / {totalPages}
+              </span>
+              <Button
+                size="sm"
+                variant="outline"
+                disabled={page === totalPages}
+                onClick={() => setPage((p) => p + 1)}
+                data-ocid="admin.users.pagination_next"
+              >
+                Next
+              </Button>
             </div>
           </div>
-        </div>
+        </>
       )}
     </div>
   );
 }
 
 function LoanApplications() {
+  const { actor } = useActor();
+  const [loans, setLoans] = useState<
+    { fullName: string; email: string; loanType: string; amount: number }[]
+  >([]);
+  const [loading, setLoading] = useState(true);
   const [tab, setTab] = useState("All");
-  const [loans, setLoans] = useState(mockLoans);
 
-  const filtered =
-    tab === "All" ? loans : loans.filter((l) => l.status === tab);
-
-  function updateLoan(id: number, status: "Approved" | "Rejected") {
-    setLoans((prev) => prev.map((l) => (l.id === id ? { ...l, status } : l)));
-    toast.success(`Loan ${status.toLowerCase()} successfully`);
-  }
+  useEffect(() => {
+    if (!actor) return;
+    setLoading(true);
+    (actor as any)
+      .getLoanApplications()
+      .then(
+        (
+          result: {
+            fullName: string;
+            email: string;
+            loanType: string;
+            amount: number;
+          }[],
+        ) => setLoans(result),
+      )
+      .catch(() => toast.error("Failed to load loan applications."))
+      .finally(() => setLoading(false));
+  }, [actor]);
 
   return (
     <div className="space-y-5">
@@ -1344,7 +940,7 @@ function LoanApplications() {
 
       <Tabs value={tab} onValueChange={setTab}>
         <TabsList>
-          {["All", "Pending", "Approved", "Rejected"].map((t) => (
+          {["All"].map((t) => (
             <TabsTrigger
               key={t}
               value={t}
@@ -1356,94 +952,91 @@ function LoanApplications() {
         </TabsList>
       </Tabs>
 
-      <div className="rounded-xl border border-border overflow-hidden">
-        <Table>
-          <TableHeader>
-            <TableRow className="bg-bank-navy/5">
-              <TableHead>Applicant</TableHead>
-              <TableHead>Type</TableHead>
-              <TableHead>Amount</TableHead>
-              <TableHead>Purpose</TableHead>
-              <TableHead>Applied</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead>Actions</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {filtered.map((l, i) => (
-              <TableRow
-                key={l.id}
-                data-ocid={
-                  `admin.loans.item.${i + 1}` as `admin.loans.item.${1}`
-                }
-              >
-                <TableCell className="font-medium text-sm">{l.name}</TableCell>
-                <TableCell>
-                  <Badge variant="outline" className="text-xs">
-                    {l.type}
-                  </Badge>
-                </TableCell>
-                <TableCell className="font-semibold text-sm">
-                  {l.amount}
-                </TableCell>
-                <TableCell className="text-sm text-muted-foreground">
-                  {l.purpose}
-                </TableCell>
-                <TableCell className="text-sm text-muted-foreground">
-                  {l.date}
-                </TableCell>
-                <TableCell>
-                  <StatusBadge status={l.status} />
-                </TableCell>
-                <TableCell>
-                  {l.status === "Pending" ? (
-                    <div className="flex gap-2">
-                      <Button
-                        size="sm"
-                        className="bg-emerald-600 hover:bg-emerald-700 text-white"
-                        onClick={() => updateLoan(l.id, "Approved")}
-                        data-ocid={
-                          `admin.loans.approve_button.${i + 1}` as `admin.loans.approve_button.${1}`
-                        }
-                      >
-                        Approve
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        className="text-red-600 border-red-200 hover:bg-red-50"
-                        onClick={() => updateLoan(l.id, "Rejected")}
-                        data-ocid={
-                          `admin.loans.reject_button.${i + 1}` as `admin.loans.reject_button.${1}`
-                        }
-                      >
-                        Reject
-                      </Button>
-                    </div>
-                  ) : (
-                    <span className="text-xs text-muted-foreground">—</span>
-                  )}
-                </TableCell>
+      {loading ? (
+        <div
+          className="p-8 text-center text-muted-foreground"
+          data-ocid="admin.loans.loading_state"
+        >
+          Loading loan applications...
+        </div>
+      ) : loans.length === 0 ? (
+        <div
+          className="p-8 text-center text-muted-foreground"
+          data-ocid="admin.loans.empty_state"
+        >
+          No loan applications have been submitted yet.
+        </div>
+      ) : (
+        <div className="rounded-xl border border-border overflow-hidden">
+          <Table>
+            <TableHeader>
+              <TableRow className="bg-bank-navy/5">
+                <TableHead>#</TableHead>
+                <TableHead>Applicant</TableHead>
+                <TableHead>Email</TableHead>
+                <TableHead>Loan Type</TableHead>
+                <TableHead className="text-right">Amount</TableHead>
               </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </div>
+            </TableHeader>
+            <TableBody>
+              {loans.map((l, i) => (
+                <TableRow
+                  key={`${l.email}-${l.loanType}`}
+                  data-ocid={
+                    `admin.loans.item.${i + 1}` as `admin.loans.item.${1}`
+                  }
+                >
+                  <TableCell className="text-xs text-muted-foreground">
+                    {i + 1}
+                  </TableCell>
+                  <TableCell className="font-medium text-sm">
+                    {l.fullName}
+                  </TableCell>
+                  <TableCell className="text-sm text-muted-foreground">
+                    {l.email}
+                  </TableCell>
+                  <TableCell>
+                    <Badge variant="outline" className="text-xs">
+                      {l.loanType}
+                    </Badge>
+                  </TableCell>
+                  <TableCell className="text-sm font-semibold text-right text-bank-gold">
+                    $
+                    {l.amount.toLocaleString("en-US", {
+                      minimumFractionDigits: 2,
+                    })}
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
+      )}
     </div>
   );
 }
 
 function KYCVerification() {
-  const [kycItems, setKycItems] = useState(mockKYC);
-  const [selected, setSelected] = useState<(typeof mockKYC)[0] | null>(null);
+  const { actor } = useActor();
+  const [kycUsers, setKycUsers] = useState<AdminUserRecord[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  function updateKYC(id: number, status: "Approved" | "Rejected") {
-    setKycItems((prev) =>
-      prev.map((k) => (k.id === id ? { ...k, status } : k)),
-    );
-    setSelected(null);
-    toast.success(`KYC ${status.toLowerCase()}`);
-  }
+  useEffect(() => {
+    if (!actor) return;
+    setLoading(true);
+    (actor as any)
+      .adminGetAllUsers()
+      .then((result: AdminUserRecord[]) => {
+        const withKyc = result.filter(
+          (u) =>
+            u.profile?.kycData?.kycStatus &&
+            u.profile.kycData.kycStatus !== "form",
+        );
+        setKycUsers(withKyc);
+      })
+      .catch(() => toast.error("Failed to load KYC data."))
+      .finally(() => setLoading(false));
+  }, [actor]);
 
   return (
     <div className="space-y-5">
@@ -1456,129 +1049,72 @@ function KYCVerification() {
         </p>
       </div>
 
-      <div className="rounded-xl border border-border overflow-hidden">
-        <Table>
-          <TableHeader>
-            <TableRow className="bg-bank-navy/5">
-              <TableHead>Applicant</TableHead>
-              <TableHead>Country</TableHead>
-              <TableHead>ID Type</TableHead>
-              <TableHead>Gov ID</TableHead>
-              <TableHead>Submitted</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead>Actions</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {kycItems.map((k, i) => (
-              <TableRow
-                key={k.id}
-                data-ocid={`admin.kyc.item.${i + 1}` as `admin.kyc.item.${1}`}
-              >
-                <TableCell>
-                  <div className="flex items-center gap-2">
-                    <Initials name={k.name} />
-                    <span className="font-medium text-sm">{k.name}</span>
-                  </div>
-                </TableCell>
-                <TableCell className="text-sm">{k.country}</TableCell>
-                <TableCell className="text-sm">{k.idType}</TableCell>
-                <TableCell className="text-sm font-mono">{k.govId}</TableCell>
-                <TableCell className="text-sm text-muted-foreground">
-                  {k.date}
-                </TableCell>
-                <TableCell>
-                  <StatusBadge status={k.status} />
-                </TableCell>
-                <TableCell>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => setSelected(k)}
-                    data-ocid={
-                      `admin.kyc.view_button.${i + 1}` as `admin.kyc.view_button.${1}`
-                    }
-                  >
-                    Review
-                  </Button>
-                </TableCell>
+      {loading ? (
+        <div
+          className="p-8 text-center text-muted-foreground"
+          data-ocid="admin.kyc.loading_state"
+        >
+          Loading KYC submissions...
+        </div>
+      ) : kycUsers.length === 0 ? (
+        <div
+          className="p-8 text-center text-muted-foreground"
+          data-ocid="admin.kyc.empty_state"
+        >
+          No KYC submissions have been made yet.
+        </div>
+      ) : (
+        <div className="rounded-xl border border-border overflow-hidden">
+          <Table>
+            <TableHeader>
+              <TableRow className="bg-bank-navy/5">
+                <TableHead>#</TableHead>
+                <TableHead>Full Name</TableHead>
+                <TableHead>Account #</TableHead>
+                <TableHead>Country</TableHead>
+                <TableHead>ID Type</TableHead>
+                <TableHead>KYC Status</TableHead>
               </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </div>
-
-      {selected && (
-        <div className="fixed inset-0 z-50 flex">
-          <button
-            type="button"
-            className="flex-1 bg-black/40"
-            onClick={() => setSelected(null)}
-          />
-          <div className="w-96 bg-white shadow-2xl border-l border-border overflow-y-auto">
-            <div className="flex items-center justify-between p-5 border-b border-border">
-              <h3 className="font-semibold text-bank-navy">KYC Review</h3>
-              <button type="button" onClick={() => setSelected(null)}>
-                <X className="h-5 w-5" />
-              </button>
-            </div>
-            <div className="p-5 space-y-4">
-              <div className="flex items-center gap-3">
-                <Initials name={selected.name} />
-                <div>
-                  <p className="font-semibold">{selected.name}</p>
-                  <p className="text-xs text-muted-foreground">
-                    {selected.country}
-                  </p>
-                </div>
-              </div>
-              {(
-                [
-                  ["ID Type", selected.idType],
-                  ["Government ID", selected.govId],
-                  ["Submitted", selected.date],
-                  ["Current Status", selected.status],
-                ] as [string, string][]
-              ).map(([k, v]) => (
-                <div
-                  key={k}
-                  className="flex justify-between py-2 border-b border-border last:border-0"
+            </TableHeader>
+            <TableBody>
+              {kycUsers.map((u, i) => (
+                <TableRow
+                  key={u.accountNumber}
+                  data-ocid={`admin.kyc.item.${i + 1}` as `admin.kyc.item.${1}`}
                 >
-                  <span className="text-sm text-muted-foreground">{k}</span>
-                  <span className="text-sm font-medium">{v}</span>
-                </div>
+                  <TableCell className="text-xs text-muted-foreground">
+                    {i + 1}
+                  </TableCell>
+                  <TableCell className="font-medium text-sm">
+                    {u.profile?.personalInfo?.fullName || (
+                      <span className="italic text-muted-foreground text-xs">
+                        No name
+                      </span>
+                    )}
+                  </TableCell>
+                  <TableCell className="font-mono text-sm">
+                    {u.accountNumber}
+                  </TableCell>
+                  <TableCell className="text-sm">
+                    {u.profile?.kycData?.country || "—"}
+                  </TableCell>
+                  <TableCell className="text-sm">
+                    {u.profile?.kycData?.idType || "—"}
+                  </TableCell>
+                  <TableCell>
+                    <StatusBadge
+                      status={
+                        (u.profile?.kycData?.kycStatus || "")
+                          .charAt(0)
+                          .toUpperCase() +
+                        (u.profile?.kycData?.kycStatus || "").slice(1)
+                      }
+                    />
+                  </TableCell>
+                </TableRow>
               ))}
-              <div className="space-y-2 pt-2">
-                <p className="text-sm font-medium text-bank-navy">Documents</p>
-                <div className="flex items-center gap-2 p-3 bg-bank-navy/5 rounded-lg">
-                  <FileText className="h-4 w-4 text-bank-navy" />
-                  <span className="text-sm">{selected.idType} Photo</span>
-                  <Badge variant="outline" className="ml-auto text-xs">
-                    Uploaded
-                  </Badge>
-                </div>
-              </div>
-              {selected.status === "Pending" && (
-                <div className="flex gap-3 pt-2">
-                  <Button
-                    className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white"
-                    onClick={() => updateKYC(selected.id, "Approved")}
-                    data-ocid="admin.kyc.approve_button"
-                  >
-                    <CheckCircle className="h-4 w-4 mr-1" /> Approve
-                  </Button>
-                  <Button
-                    variant="outline"
-                    className="flex-1 text-red-600 border-red-200 hover:bg-red-50"
-                    onClick={() => updateKYC(selected.id, "Rejected")}
-                    data-ocid="admin.kyc.reject_button"
-                  >
-                    <XCircle className="h-4 w-4 mr-1" /> Reject
-                  </Button>
-                </div>
-              )}
-            </div>
-          </div>
+            </TableBody>
+          </Table>
         </div>
       )}
     </div>
@@ -1586,25 +1122,23 @@ function KYCVerification() {
 }
 
 function ContactRequests() {
-  const [tab, setTab] = useState("All");
-  const [contacts, setContacts] = useState(mockContacts);
-  const [selected, setSelected] = useState<(typeof mockContacts)[0] | null>(
-    null,
-  );
+  const { actor } = useActor();
+  const [contacts, setContacts] = useState<
+    { name: string; email: string; message: string }[]
+  >([]);
+  const [loading, setLoading] = useState(true);
 
-  const filtered =
-    tab === "All"
-      ? contacts
-      : tab === "Contact Forms"
-        ? contacts.filter((c) => c.type === "Contact Form")
-        : contacts.filter((c) => c.type === "Advisory");
-
-  function markResolved(id: number) {
-    setContacts((prev) =>
-      prev.map((c) => (c.id === id ? { ...c, status: "Resolved" } : c)),
-    );
-    toast.success("Marked as resolved");
-  }
+  useEffect(() => {
+    if (!actor) return;
+    setLoading(true);
+    (actor as any)
+      .getContactForms()
+      .then((result: { name: string; email: string; message: string }[]) =>
+        setContacts(result),
+      )
+      .catch(() => toast.error("Failed to load contact forms."))
+      .finally(() => setLoading(false));
+  }, [actor]);
 
   return (
     <div className="space-y-5">
@@ -1617,125 +1151,55 @@ function ContactRequests() {
         </p>
       </div>
 
-      <Tabs value={tab} onValueChange={setTab}>
-        <TabsList>
-          {["All", "Contact Forms", "Advisory Bookings"].map((t) => (
-            <TabsTrigger
-              key={t}
-              value={t}
-              data-ocid={`admin.contacts.${t.toLowerCase().replace(/ /g, "_")}.tab`}
-            >
-              {t}
-            </TabsTrigger>
-          ))}
-        </TabsList>
-      </Tabs>
-
-      <div className="rounded-xl border border-border overflow-hidden">
-        <Table>
-          <TableHeader>
-            <TableRow className="bg-bank-navy/5">
-              <TableHead>Name</TableHead>
-              <TableHead>Email</TableHead>
-              <TableHead>Type</TableHead>
-              <TableHead>Subject</TableHead>
-              <TableHead>Date</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead>Actions</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {filtered.map((c, i) => (
-              <TableRow
-                key={c.id}
-                data-ocid={
-                  `admin.contacts.item.${i + 1}` as `admin.contacts.item.${1}`
-                }
-              >
-                <TableCell className="font-medium text-sm">{c.name}</TableCell>
-                <TableCell className="text-sm text-muted-foreground">
-                  {c.email}
-                </TableCell>
-                <TableCell>
-                  <Badge variant="outline" className="text-xs">
-                    {c.type}
-                  </Badge>
-                </TableCell>
-                <TableCell className="text-sm">{c.subject}</TableCell>
-                <TableCell className="text-sm text-muted-foreground">
-                  {c.date}
-                </TableCell>
-                <TableCell>
-                  <StatusBadge status={c.status} />
-                </TableCell>
-                <TableCell>
-                  <div className="flex gap-2">
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => setSelected(c)}
-                      data-ocid={
-                        `admin.contacts.view_button.${i + 1}` as `admin.contacts.view_button.${1}`
-                      }
-                    >
-                      View
-                    </Button>
-                    {c.status !== "Resolved" && (
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        className="text-emerald-600 border-emerald-200 hover:bg-emerald-50"
-                        onClick={() => markResolved(c.id)}
-                        data-ocid={
-                          `admin.contacts.confirm_button.${i + 1}` as `admin.contacts.confirm_button.${1}`
-                        }
-                      >
-                        Resolve
-                      </Button>
-                    )}
-                  </div>
-                </TableCell>
+      {loading ? (
+        <div
+          className="p-8 text-center text-muted-foreground"
+          data-ocid="admin.contacts.loading_state"
+        >
+          Loading contact requests...
+        </div>
+      ) : contacts.length === 0 ? (
+        <div
+          className="p-8 text-center text-muted-foreground"
+          data-ocid="admin.contacts.empty_state"
+        >
+          No contact forms have been submitted yet.
+        </div>
+      ) : (
+        <div className="rounded-xl border border-border overflow-hidden">
+          <Table>
+            <TableHeader>
+              <TableRow className="bg-bank-navy/5">
+                <TableHead>#</TableHead>
+                <TableHead>Name</TableHead>
+                <TableHead>Email</TableHead>
+                <TableHead>Message</TableHead>
               </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </div>
-
-      {selected && (
-        <div className="fixed inset-0 z-50 flex">
-          <button
-            type="button"
-            className="flex-1 bg-black/40"
-            onClick={() => setSelected(null)}
-          />
-          <div className="w-80 bg-white shadow-2xl border-l border-border overflow-y-auto">
-            <div className="flex items-center justify-between p-5 border-b border-border">
-              <h3 className="font-semibold text-bank-navy">Request Details</h3>
-              <button type="button" onClick={() => setSelected(null)}>
-                <X className="h-5 w-5" />
-              </button>
-            </div>
-            <div className="p-5 space-y-3">
-              {(
-                [
-                  ["Name", selected.name],
-                  ["Email", selected.email],
-                  ["Type", selected.type],
-                  ["Subject", selected.subject],
-                  ["Date", selected.date],
-                  ["Status", selected.status],
-                ] as [string, string][]
-              ).map(([k, v]) => (
-                <div
-                  key={k}
-                  className="flex justify-between py-2 border-b border-border last:border-0"
+            </TableHeader>
+            <TableBody>
+              {contacts.map((c, i) => (
+                <TableRow
+                  key={`${c.email}-${c.name}`}
+                  data-ocid={
+                    `admin.contacts.item.${i + 1}` as `admin.contacts.item.${1}`
+                  }
                 >
-                  <span className="text-sm text-muted-foreground">{k}</span>
-                  <span className="text-sm font-medium">{v}</span>
-                </div>
+                  <TableCell className="text-xs text-muted-foreground">
+                    {i + 1}
+                  </TableCell>
+                  <TableCell className="font-medium text-sm">
+                    {c.name}
+                  </TableCell>
+                  <TableCell className="text-sm text-muted-foreground">
+                    {c.email}
+                  </TableCell>
+                  <TableCell className="text-sm text-muted-foreground max-w-xs truncate">
+                    {c.message}
+                  </TableCell>
+                </TableRow>
               ))}
-            </div>
-          </div>
+            </TableBody>
+          </Table>
         </div>
       )}
     </div>
@@ -1743,15 +1207,31 @@ function ContactRequests() {
 }
 
 function TransactionMonitor() {
+  const { actor } = useActor();
+  const [requests, setRequests] = useState<PendingRequest[]>([]);
+  const [loading, setLoading] = useState(true);
   const [typeFilter, setTypeFilter] = useState("All");
-  const [dateFrom, setDateFrom] = useState("");
-  const [dateTo, setDateTo] = useState("");
 
-  const filtered = mockTransactions.filter(
-    (t) => typeFilter === "All" || t.type === typeFilter,
+  useEffect(() => {
+    if (!actor) return;
+    setLoading(true);
+    (actor as any)
+      .adminGetPendingRequests()
+      .then((result: PendingRequest[]) => setRequests(result))
+      .catch(() => toast.error("Failed to load transactions."))
+      .finally(() => setLoading(false));
+  }, [actor]);
+
+  const filtered = requests.filter(
+    (r) =>
+      typeFilter === "All" ||
+      r.requestType.__kind__ === typeFilter.toLowerCase(),
   );
-  const completed = filtered.filter((t) => t.status === "Completed").length;
-  const failed = filtered.filter((t) => t.status === "Failed").length;
+
+  const formatPrincipal = (p: { toString(): string }) => {
+    const s = p.toString();
+    return `${s.slice(0, 10)}...${s.slice(-6)}`;
+  };
 
   return (
     <div className="space-y-5">
@@ -1764,19 +1244,30 @@ function TransactionMonitor() {
         </p>
       </div>
 
-      {/* Summary bar */}
       <div className="grid grid-cols-3 gap-4">
         {[
-          { label: "Total Volume", value: "$1.2M", color: "text-bank-navy" },
           {
-            label: "Completed",
-            value: `${Math.round((completed / filtered.length) * 100)}%`,
-            color: "text-emerald-600",
+            label: "Total Requests",
+            value: loading ? "—" : requests.length.toString(),
+            color: "text-bank-navy",
           },
           {
-            label: "Failed",
-            value: `${Math.round((failed / filtered.length) * 100)}%`,
-            color: "text-red-600",
+            label: "Pending",
+            value: loading
+              ? "—"
+              : requests
+                  .filter((r) => r.status.__kind__ === "pending")
+                  .length.toString(),
+            color: "text-amber-600",
+          },
+          {
+            label: "Approved",
+            value: loading
+              ? "—"
+              : requests
+                  .filter((r) => r.status.__kind__ === "approved")
+                  .length.toString(),
+            color: "text-emerald-600",
           },
         ].map((s) => (
           <Card key={s.label} className="border border-border">
@@ -1788,98 +1279,119 @@ function TransactionMonitor() {
         ))}
       </div>
 
-      <div className="flex flex-wrap gap-3">
-        <div className="flex items-center gap-2">
-          <Label className="text-sm text-muted-foreground">From</Label>
-          <Input
-            type="date"
-            value={dateFrom}
-            onChange={(e) => setDateFrom(e.target.value)}
-            className="w-40"
-            data-ocid="admin.transactions.search_input"
-          />
-        </div>
-        <div className="flex items-center gap-2">
-          <Label className="text-sm text-muted-foreground">To</Label>
-          <Input
-            type="date"
-            value={dateTo}
-            onChange={(e) => setDateTo(e.target.value)}
-            className="w-40"
-          />
-        </div>
+      <div className="flex gap-3">
         <Select value={typeFilter} onValueChange={setTypeFilter}>
           <SelectTrigger className="w-44" data-ocid="admin.transactions.select">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
-            {["All", "Deposit", "Withdrawal", "Transfer", "Loan Payment"].map(
-              (t) => (
-                <SelectItem key={t} value={t}>
-                  {t}
-                </SelectItem>
-              ),
-            )}
+            {["All", "Deposit", "Withdrawal"].map((t) => (
+              <SelectItem key={t} value={t}>
+                {t}
+              </SelectItem>
+            ))}
           </SelectContent>
         </Select>
       </div>
 
-      <div className="rounded-xl border border-border overflow-hidden">
-        <Table>
-          <TableHeader>
-            <TableRow className="bg-bank-navy/5">
-              <TableHead>Transaction ID</TableHead>
-              <TableHead>User</TableHead>
-              <TableHead>Type</TableHead>
-              <TableHead>Amount</TableHead>
-              <TableHead>Date</TableHead>
-              <TableHead>Status</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {filtered.map((t, i) => (
-              <TableRow
-                key={t.id}
-                data-ocid={
-                  `admin.transactions.item.${i + 1}` as `admin.transactions.item.${1}`
-                }
-              >
-                <TableCell className="text-sm font-mono text-muted-foreground">
-                  {t.id}
-                </TableCell>
-                <TableCell className="text-sm font-medium">{t.user}</TableCell>
-                <TableCell>
-                  <Badge variant="outline" className="text-xs">
-                    {t.type}
-                  </Badge>
-                </TableCell>
-                <TableCell className="text-sm font-semibold">
-                  {t.amount}
-                </TableCell>
-                <TableCell className="text-sm text-muted-foreground">
-                  {t.date}
-                </TableCell>
-                <TableCell>
-                  <StatusBadge status={t.status} />
-                </TableCell>
+      {loading ? (
+        <div
+          className="p-8 text-center text-muted-foreground"
+          data-ocid="admin.transactions.loading_state"
+        >
+          Loading transactions...
+        </div>
+      ) : filtered.length === 0 ? (
+        <div
+          className="p-8 text-center text-muted-foreground"
+          data-ocid="admin.transactions.empty_state"
+        >
+          No transactions found.
+        </div>
+      ) : (
+        <div className="rounded-xl border border-border overflow-hidden">
+          <Table>
+            <TableHeader>
+              <TableRow className="bg-bank-navy/5">
+                <TableHead>Request ID</TableHead>
+                <TableHead>User</TableHead>
+                <TableHead>Type</TableHead>
+                <TableHead className="text-right">Amount</TableHead>
+                <TableHead>Description</TableHead>
+                <TableHead>Date</TableHead>
+                <TableHead>Status</TableHead>
               </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </div>
+            </TableHeader>
+            <TableBody>
+              {filtered.map((t, i) => (
+                <TableRow
+                  key={t.requestId}
+                  data-ocid={
+                    `admin.transactions.item.${i + 1}` as `admin.transactions.item.${1}`
+                  }
+                >
+                  <TableCell className="text-sm font-mono text-muted-foreground">
+                    {t.requestId.slice(0, 12)}...
+                  </TableCell>
+                  <TableCell className="text-sm font-mono text-muted-foreground">
+                    {formatPrincipal(t.owner)}
+                  </TableCell>
+                  <TableCell>
+                    <Badge variant="outline" className="text-xs">
+                      {t.requestType.__kind__ === "deposit"
+                        ? "Deposit"
+                        : "Withdrawal"}
+                    </Badge>
+                  </TableCell>
+                  <TableCell className="text-sm font-semibold text-right text-bank-gold">
+                    $
+                    {t.amount.toLocaleString("en-US", {
+                      minimumFractionDigits: 2,
+                    })}
+                  </TableCell>
+                  <TableCell className="text-xs text-muted-foreground max-w-[140px] truncate">
+                    {t.description}
+                  </TableCell>
+                  <TableCell className="text-xs text-muted-foreground">
+                    {t.date}
+                  </TableCell>
+                  <TableCell>
+                    <StatusBadge
+                      status={
+                        t.status.__kind__.charAt(0).toUpperCase() +
+                        t.status.__kind__.slice(1)
+                      }
+                    />
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
+      )}
     </div>
   );
 }
 
 function AccountRequests() {
-  const [requests, setRequests] = useState(mockAccountRequests);
+  const { actor } = useActor();
+  const [requests, setRequests] = useState<
+    { fullName: string; email: string; accountType: string }[]
+  >([]);
+  const [loading, setLoading] = useState(true);
 
-  function updateRequest(id: number, status: "Approved" | "Rejected") {
-    setRequests((prev) =>
-      prev.map((r) => (r.id === id ? { ...r, status } : r)),
-    );
-    toast.success(`Account request ${status.toLowerCase()}`);
-  }
+  useEffect(() => {
+    if (!actor) return;
+    setLoading(true);
+    (actor as any)
+      .getAccountApplications()
+      .then(
+        (result: { fullName: string; email: string; accountType: string }[]) =>
+          setRequests(result),
+      )
+      .catch(() => toast.error("Failed to load account applications."))
+      .finally(() => setLoading(false));
+  }, [actor]);
 
   return (
     <div className="space-y-5">
@@ -1892,78 +1404,64 @@ function AccountRequests() {
         </p>
       </div>
 
-      <div className="rounded-xl border border-border overflow-hidden">
-        <Table>
-          <TableHeader>
-            <TableRow className="bg-bank-navy/5">
-              <TableHead>Applicant</TableHead>
-              <TableHead>Account Type</TableHead>
-              <TableHead>Date</TableHead>
-              <TableHead>Documents</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead>Actions</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {requests.map((r, i) => (
-              <TableRow
-                key={r.id}
-                data-ocid={
-                  `admin.accounts.item.${i + 1}` as `admin.accounts.item.${1}`
-                }
-              >
-                <TableCell className="font-medium text-sm">{r.name}</TableCell>
-                <TableCell className="text-sm">{r.type}</TableCell>
-                <TableCell className="text-sm text-muted-foreground">
-                  {r.date}
-                </TableCell>
-                <TableCell className="text-sm text-muted-foreground">
-                  {r.documents}
-                </TableCell>
-                <TableCell>
-                  <StatusBadge status={r.status} />
-                </TableCell>
-                <TableCell>
-                  {r.status === "Pending" ? (
-                    <div className="flex gap-2">
-                      <Button
-                        size="sm"
-                        className="bg-emerald-600 hover:bg-emerald-700 text-white"
-                        onClick={() => updateRequest(r.id, "Approved")}
-                        data-ocid={
-                          `admin.accounts.approve_button.${i + 1}` as `admin.accounts.approve_button.${1}`
-                        }
-                      >
-                        Approve
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        className="text-red-600 border-red-200 hover:bg-red-50"
-                        onClick={() => updateRequest(r.id, "Rejected")}
-                        data-ocid={
-                          `admin.accounts.reject_button.${i + 1}` as `admin.accounts.reject_button.${1}`
-                        }
-                      >
-                        Reject
-                      </Button>
-                    </div>
-                  ) : (
-                    <span className="text-xs text-muted-foreground">—</span>
-                  )}
-                </TableCell>
+      {loading ? (
+        <div
+          className="p-8 text-center text-muted-foreground"
+          data-ocid="admin.accounts.loading_state"
+        >
+          Loading account requests...
+        </div>
+      ) : requests.length === 0 ? (
+        <div
+          className="p-8 text-center text-muted-foreground"
+          data-ocid="admin.accounts.empty_state"
+        >
+          No account opening requests have been submitted.
+        </div>
+      ) : (
+        <div className="rounded-xl border border-border overflow-hidden">
+          <Table>
+            <TableHeader>
+              <TableRow className="bg-bank-navy/5">
+                <TableHead>#</TableHead>
+                <TableHead>Full Name</TableHead>
+                <TableHead>Email</TableHead>
+                <TableHead>Account Type</TableHead>
               </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </div>
+            </TableHeader>
+            <TableBody>
+              {requests.map((r, i) => (
+                <TableRow
+                  key={`${r.email}-${r.accountType}`}
+                  data-ocid={
+                    `admin.accounts.item.${i + 1}` as `admin.accounts.item.${1}`
+                  }
+                >
+                  <TableCell className="text-xs text-muted-foreground">
+                    {i + 1}
+                  </TableCell>
+                  <TableCell className="font-medium text-sm">
+                    {r.fullName}
+                  </TableCell>
+                  <TableCell className="text-sm text-muted-foreground">
+                    {r.email}
+                  </TableCell>
+                  <TableCell>
+                    <Badge variant="outline" className="text-xs capitalize">
+                      {r.accountType}
+                    </Badge>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
+      )}
     </div>
   );
 }
 
 function SiteVisitors() {
-  const maxVisits = Math.max(...dailyVisits.map((d) => d.visits));
-
   return (
     <div className="space-y-6">
       <div>
@@ -1975,13 +1473,12 @@ function SiteVisitors() {
         </p>
       </div>
 
-      {/* Stats */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {[
-          { label: "Today's Visits", value: "342", icon: TrendingUp },
-          { label: "This Week", value: "2,104", icon: BarChart3 },
-          { label: "This Month", value: "8,729", icon: Globe },
-          { label: "Bounce Rate", value: "34%", icon: Activity },
+          { label: "Today's Visits", value: "0", icon: TrendingUp },
+          { label: "This Week", value: "0", icon: BarChart3 },
+          { label: "This Month", value: "0", icon: Globe },
+          { label: "Total Visitors", value: "0", icon: Activity },
         ].map((s) => (
           <Card key={s.label} className="border border-border">
             <CardContent className="p-4">
@@ -1995,119 +1492,20 @@ function SiteVisitors() {
         ))}
       </div>
 
-      {/* Bar chart */}
-      <Card className="border border-border">
-        <CardHeader className="pb-2">
-          <CardTitle className="text-base font-semibold text-bank-navy">
-            Daily Visits — Last 7 Days
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="flex items-end gap-3 h-40">
-            {dailyVisits.map((d) => (
-              <div
-                key={d.day}
-                className="flex-1 flex flex-col items-center gap-1"
-              >
-                <span className="text-xs text-muted-foreground">
-                  {d.visits}
-                </span>
-                <div
-                  className="w-full bg-bank-navy/80 rounded-t-sm transition-all"
-                  style={{ height: `${(d.visits / maxVisits) * 120}px` }}
-                />
-                <span className="text-xs text-muted-foreground">{d.day}</span>
-              </div>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Top Pages */}
-      <Card className="border border-border">
-        <CardHeader className="pb-2">
-          <CardTitle className="text-base font-semibold text-bank-navy">
-            Top Pages
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="rounded-lg border border-border overflow-hidden">
-            <Table>
-              <TableHeader>
-                <TableRow className="bg-bank-navy/5">
-                  <TableHead>Page</TableHead>
-                  <TableHead>Views</TableHead>
-                  <TableHead>Avg Time</TableHead>
-                  <TableHead>Bounce Rate</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {topPages.map((p, i) => (
-                  <TableRow
-                    key={p.page}
-                    data-ocid={
-                      `admin.visitors.item.${i + 1}` as `admin.visitors.item.${1}`
-                    }
-                  >
-                    <TableCell className="text-sm font-mono">
-                      {p.page}
-                    </TableCell>
-                    <TableCell className="text-sm font-semibold">
-                      {p.views.toLocaleString()}
-                    </TableCell>
-                    <TableCell className="text-sm text-muted-foreground">
-                      {p.avgTime}
-                    </TableCell>
-                    <TableCell className="text-sm">{p.bounce}</TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Visitor Log */}
-      <Card className="border border-border">
-        <CardHeader className="pb-2">
-          <CardTitle className="text-base font-semibold text-bank-navy">
-            Recent Visitor Log
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="overflow-x-auto">
-          <Table>
-            <TableHeader>
-              <TableRow className="bg-bank-navy/5">
-                <TableHead>Timestamp</TableHead>
-                <TableHead>Page</TableHead>
-                <TableHead>Device</TableHead>
-                <TableHead>Country</TableHead>
-                <TableHead>IP Address</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {visitorLog.map((v, i) => (
-                <TableRow
-                  key={v.time}
-                  data-ocid={
-                    `admin.visitors.row.${i + 1}` as `admin.visitors.row.${1}`
-                  }
-                >
-                  <TableCell className="text-xs text-muted-foreground whitespace-nowrap">
-                    {v.time}
-                  </TableCell>
-                  <TableCell className="text-xs font-mono">{v.page}</TableCell>
-                  <TableCell className="text-xs text-muted-foreground">
-                    {v.device}
-                  </TableCell>
-                  <TableCell className="text-xs">{v.country}</TableCell>
-                  <TableCell className="text-xs font-mono text-muted-foreground">
-                    {v.ip}
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+      <Card
+        className="border border-border"
+        data-ocid="admin.visitors.empty_state"
+      >
+        <CardContent className="p-12 text-center">
+          <Globe className="h-12 w-12 text-bank-navy/20 mx-auto mb-4" />
+          <h3 className="font-semibold text-bank-navy mb-2">
+            Visitor Tracking Not Yet Configured
+          </h3>
+          <p className="text-sm text-muted-foreground max-w-md mx-auto">
+            Visitor tracking is not yet configured. No visitor data has been
+            collected since the site launched. Analytics will appear here once a
+            visitor tracking service is integrated.
+          </p>
         </CardContent>
       </Card>
     </div>
@@ -2269,6 +1667,12 @@ function SystemSettings() {
 const navItems: { section: Section; label: string; icon: React.ElementType }[] =
   [
     { section: "dashboard", label: "Dashboard", icon: LayoutDashboard },
+    { section: "registered_users", label: "Registered Users", icon: Users },
+    {
+      section: "transaction_requests",
+      label: "Transaction Requests",
+      icon: Activity,
+    },
     { section: "users", label: "User Management", icon: Users },
     { section: "loans", label: "Loan Applications", icon: CreditCard },
     { section: "kyc", label: "KYC Verification", icon: UserCheck },
@@ -2376,6 +1780,8 @@ export default function AdminPage() {
           {section === "dashboard" && (
             <DashboardOverview setSection={setSection} />
           )}
+          {section === "registered_users" && <RegisteredUsers />}
+          {section === "transaction_requests" && <TransactionRequests />}
           {section === "users" && <UserManagement />}
           {section === "loans" && <LoanApplications />}
           {section === "kyc" && <KYCVerification />}
